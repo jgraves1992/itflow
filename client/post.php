@@ -834,12 +834,13 @@ if (isset($_GET['create_stripe_checkout'])) {
         require_once '../plugins/stripe-php/init.php';
         $stripe = new \Stripe\StripeClient($stripe_secret_key);
 
-        // Create checkout session
+        // Create checkout session - supports card and ACH (us_bank_account)
         $checkout_session = $stripe->checkout->sessions->create([
             'currency' => $client_currency,
             'mode' => 'setup',
             'ui_mode' => 'embedded',
             'return_url' => $return_url,
+            'payment_method_types' => ['card', 'us_bank_account'],
         ]);
 
         echo json_encode(['clientSecret' => $checkout_session->client_secret]);
@@ -919,12 +920,20 @@ if (isset($_GET['stripe_save_card'])) {
 
         // Retrieve PM details for logging and UI
         $payment_method_details = $stripe->paymentMethods->retrieve($payment_method_id, []);
-        $card_brand = sanitizeInput($payment_method_details->card->brand);
-        $last4 = sanitizeInput($payment_method_details->card->last4);
-        $exp_month = sanitizeInput($payment_method_details->card->exp_month);
-        $exp_year = sanitizeInput($payment_method_details->card->exp_year);
+        $pm_type = sanitizeInput($payment_method_details->type);
 
-        $saved_payment_description = "$card_brand - $last4 | Exp $exp_month/$exp_year";
+        if ($pm_type === 'us_bank_account') {
+            $bank_name = sanitizeInput($payment_method_details->us_bank_account->bank_name);
+            $last4     = sanitizeInput($payment_method_details->us_bank_account->last4);
+            $saved_payment_description = "ACH - $bank_name ****$last4";
+        } else {
+            // Default: card
+            $card_brand = sanitizeInput($payment_method_details->card->brand);
+            $last4      = sanitizeInput($payment_method_details->card->last4);
+            $exp_month  = sanitizeInput($payment_method_details->card->exp_month);
+            $exp_year   = sanitizeInput($payment_method_details->card->exp_year);
+            $saved_payment_description = "$card_brand - $last4 | Exp $exp_month/$exp_year";
+        }
 
         // Insert into client_saved_payment_methods
         mysqli_query($mysqli, "
@@ -963,7 +972,7 @@ if (isset($_GET['stripe_save_card'])) {
         $subject = "Payment method saved";
         $body = "Hello $session_contact_name<br><br>
         Were writing to confirm that your payment details have been securely stored with Stripe our trusted payment processor.<br><br>
-        You authorized us to automatically bill your card ($saved_payment_description) for future invoices.<br><br>
+        You authorized us to automatically bill your payment method ($saved_payment_description) for future invoices.<br><br>
         You may update or remove your payment method at any time via the client portal.<br><br>
         Thank you for your business!<br><br>
         --<br>$company_name - Billing Department<br>$config_invoice_from_email<br>$company_phone";

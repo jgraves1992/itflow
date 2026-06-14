@@ -843,7 +843,11 @@ while ($row = mysqli_fetch_assoc($sql_recurring_payments)) {
 
                     $pi_id = sanitizeInput($payment_intent->id);
                     $pi_date = date('Y-m-d', $payment_intent->created);
-                    $pi_amount_paid = floatval($payment_intent->amount_received / 100);
+                    // ACH returns status "processing" with amount_received = 0 until funds settle
+                    $pi_is_ach = ($payment_intent->status === 'processing');
+                    $pi_amount_paid = $pi_is_ach
+                        ? floatval($payment_intent->amount / 100)
+                        : floatval($payment_intent->amount_received / 100);
                     $pi_currency = strtoupper(sanitizeInput($payment_intent->currency));
                     $pi_livemode = $payment_intent->livemode;
 
@@ -856,13 +860,15 @@ while ($row = mysqli_fetch_assoc($sql_recurring_payments)) {
                     continue;
                 }
 
-                if ($payment_intent->status == "succeeded" && intval($balance_to_pay) == intval($pi_amount_paid)) {
+                if (in_array($payment_intent->status, ['succeeded', 'processing']) && intval($balance_to_pay) == intval($pi_amount_paid)) {
+
+                    $payment_method_label = $pi_is_ach ? 'Stripe ACH (Pending)' : 'Stripe';
 
                     // Update Invoice Status
                     mysqli_query($mysqli, "UPDATE invoices SET invoice_status = 'Paid' WHERE invoice_id = $invoice_id");
 
                     // Add Payment to History
-                    mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $account_id, payment_method = 'Stripe', payment_reference = 'Stripe - $pi_id', payment_invoice_id = $invoice_id");
+                    mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $account_id, payment_method = '$payment_method_label', payment_reference = 'Stripe - $pi_id', payment_invoice_id = $invoice_id");
                     mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Paid', history_description = 'Online Payment added (autopay)', history_invoice_id = $invoice_id");
 
                     // EXPENSE: Stripe gateway fee as an expense (if configured)
@@ -906,6 +912,9 @@ while ($row = mysqli_fetch_assoc($sql_recurring_payments)) {
 
                     // LOGGING
                     $extended_log_desc = !$pi_livemode ? '(DEV MODE)' : '';
+                    if ($pi_is_ach) {
+                        $extended_log_desc .= ' (ACH - Pending Settlement)';
+                    }
                     appNotify("Invoice Paid", "Invoice $invoice_prefix$invoice_number automatically paid", "/agent/invoice.php?invoice_id=$invoice_id", $client_id);
                     logAction("Invoice", "Payment", "Auto Stripe payment amount of " . numfmt_format_currency($currency_format, $invoice_amount, $recurring_payment_currency_code) . " added to invoice $invoice_prefix$invoice_number - $pi_id $extended_log_desc", $client_id, $invoice_id);
                     customAction('invoice_pay', $invoice_id);

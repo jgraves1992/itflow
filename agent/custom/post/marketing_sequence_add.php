@@ -1,0 +1,40 @@
+<?php
+defined('FROM_POST_HANDLER') or die('Direct access not permitted');
+
+if (!isset($_POST['add_marketing_sequence'])) return;
+
+validateCSRFToken($_POST['csrf_token'] ?? '');
+enforceUserPermission('module_client', 2);
+
+$sequence_name  = sanitizeInput($_POST['sequence_name'] ?? '');
+$sequence_desc  = sanitizeInput($_POST['sequence_description'] ?? '');
+$from_name      = sanitizeInput($_POST['sequence_from_name'] ?? '');
+$from_email     = sanitizeInput($_POST['sequence_from_email'] ?? '');
+$send_time      = preg_match('/^\d{2}:\d{2}$/', $_POST['sequence_send_time'] ?? '') ? $_POST['sequence_send_time'] . ':00' : '09:00:00';
+
+if (!$sequence_name) {
+    $_SESSION['error'] = 'Sequence name is required.';
+    header('Location: ../marketing_sequences.php');
+    exit;
+}
+
+if ($from_email && !filter_var($from_email, FILTER_VALIDATE_EMAIL)) {
+    $_SESSION['error'] = 'Invalid from email address.';
+    header('Location: ../marketing_sequences.php');
+    exit;
+}
+
+$n  = mysqli_real_escape_string($mysqli, $sequence_name);
+$d  = mysqli_real_escape_string($mysqli, $sequence_desc);
+$fn = mysqli_real_escape_string($mysqli, $from_name);
+$fe = mysqli_real_escape_string($mysqli, $from_email);
+
+mysqli_query($mysqli,
+    "INSERT INTO marketing_sequences (sequence_name, sequence_description, sequence_from_name, sequence_from_email, sequence_send_time)
+     VALUES ('$n', '$d', '$fn', '$fe', '$send_time')");
+
+$new_id = mysqli_insert_id($mysqli);
+
+$_SESSION['success'] = "Sequence <strong>$sequence_name</strong> created. Add your first email step below.";
+header("Location: /agent/custom/marketing_sequence_details.php?id=$new_id");
+exit;

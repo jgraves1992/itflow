@@ -91,24 +91,32 @@ if (!$stripe_public_key || !$stripe_secret_key) {
                         foreach ($saved_methods as $method) {
                             $stripe_pm_id = $method['saved_payment_provider_method'];
                             $description = nullable_htmlentities($method['saved_payment_description']);
-                            $payment_icon = "fas fa-credit-card"; // default icon
-                            if (strpos($description, "visa") !== false) {
-                                $payment_icon = "fab fa-cc-visa";
-                            } elseif (strpos($description, "mastercard") !== false) {
-                                $payment_icon = "fab fa-cc-mastercard";
-                            } elseif (strpos($description, "american express") !== false || strpos($description, "amex") !== false) {
-                                $payment_icon = "fab fa-cc-amex";
-                            } elseif (strpos($description, "discover") !== false) {
-                                $payment_icon = "fab fa-cc-discover";
-                            }
+                            $payment_icon = 'fas fa-credit-card'; // default, overridden below per type
 
                             $pm = $stripe->paymentMethods->retrieve($stripe_pm_id, []);
-                            $brand = nullable_htmlentities($pm->card->brand);
-                            $last4 = nullable_htmlentities($pm->card->last4);
-                            $exp_month = nullable_htmlentities($pm->card->exp_month);
-                            $exp_year = nullable_htmlentities($pm->card->exp_year);
+                            $pm_type = $pm->type;
 
-                            echo "<li><i class='$payment_icon fa-2x mr-2'></i>$brand x<strong>$last4</strong> | Exp. $exp_month/$exp_year";
+                            if ($pm_type === 'us_bank_account') {
+                                $bank_name = nullable_htmlentities($pm->us_bank_account->bank_name);
+                                $last4     = nullable_htmlentities($pm->us_bank_account->last4);
+                                $payment_icon = 'fas fa-university';
+                                echo "<li><i class='$payment_icon fa-2x mr-2'></i>ACH – $bank_name ****<strong>$last4</strong>";
+                            } else {
+                                $brand     = nullable_htmlentities($pm->card->brand);
+                                $last4     = nullable_htmlentities($pm->card->last4);
+                                $exp_month = nullable_htmlentities($pm->card->exp_month);
+                                $exp_year  = nullable_htmlentities($pm->card->exp_year);
+                                if (strpos(strtolower($brand), 'visa') !== false) {
+                                    $payment_icon = 'fab fa-cc-visa';
+                                } elseif (strpos(strtolower($brand), 'mastercard') !== false) {
+                                    $payment_icon = 'fab fa-cc-mastercard';
+                                } elseif (strpos(strtolower($brand), 'amex') !== false || strpos(strtolower($brand), 'american express') !== false) {
+                                    $payment_icon = 'fab fa-cc-amex';
+                                } elseif (strpos(strtolower($brand), 'discover') !== false) {
+                                    $payment_icon = 'fab fa-cc-discover';
+                                }
+                                echo "<li><i class='$payment_icon fa-2x mr-2'></i>$brand ****<strong>$last4</strong> | Exp. $exp_month/$exp_year";
+                            }
                             echo " – <a class='text-danger' href='post.php?delete_saved_payment={$method['saved_payment_id']}&csrf_token={$_SESSION['csrf_token']}'>Remove</a></li>";
                         }
                     } catch (Exception $e) {

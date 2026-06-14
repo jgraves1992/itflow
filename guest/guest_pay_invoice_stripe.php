@@ -169,9 +169,12 @@ if (isset($_GET['invoice_id'], $_GET['url_key']) && !isset($_GET['payment_intent
     if ($pi_obj->client_secret !== $pi_cs) {
         error_log("Stripe payment error - Payment intent ID/Secret mismatch for $pi_id");
         exit(WORDING_PAYMENT_FAILED);
-    } elseif ($pi_obj->status !== "succeeded") {
+    } elseif (!in_array($pi_obj->status, ["succeeded", "processing"])) {
+        // ACH/bank payments return "processing" until funds settle (up to 4 business days)
         exit(WORDING_PAYMENT_FAILED);
-    } elseif ($pi_obj->amount !== $pi_obj->amount_received) {
+    } elseif ($pi_obj->status === "succeeded" && $pi_obj->amount !== $pi_obj->amount_received) {
+        // Only enforce amount_received match for immediately-settled payments (cards)
+        // ACH will have amount_received = 0 until settlement
         error_log("Stripe payment error - payment amount does not match amount paid for $pi_id");
         exit(WORDING_PAYMENT_FAILED);
     }
@@ -180,7 +183,11 @@ if (isset($_GET['invoice_id'], $_GET['url_key']) && !isset($_GET['payment_intent
     $pi_date = date('Y-m-d', $pi_obj->created);
     $pi_invoice_id = intval($pi_obj->metadata->itflow_invoice_id);
     $pi_client_id = intval($pi_obj->metadata->itflow_client_id);
-    $pi_amount_paid = floatval(($pi_obj->amount_received / 100));
+    // ACH/bank payments have amount_received = 0 while processing; use PI amount instead
+    $pi_is_ach = ($pi_obj->status === "processing");
+    $pi_amount_paid = $pi_is_ach
+        ? floatval($pi_obj->amount / 100)
+        : floatval($pi_obj->amount_received / 100);
     $pi_currency = strtoupper(sanitizeInput($pi_obj->currency));
     $pi_livemode = $pi_obj->livemode;
 
@@ -235,20 +242,27 @@ if (isset($_GET['invoice_id'], $_GET['url_key']) && !isset($_GET['payment_intent
     }
 
     // Update Invoice Status
-    mysqli_query($mysqli, "UPDATE invoices SET invoice_status = 'Paid' WHERE invoice_id = $invoice_id");
+    // ACH payments are optimistically marked Paid on submission; funds settle within 4 business days
+    $new_invoice_status = 'Paid';
+    mysqli_query($mysqli, "UPDATE invoices SET invoice_status = '$new_invoice_status' WHERE invoice_id = $invoice_id");
 
     // Add Payment to History
-    mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $stripe_account, payment_method = 'Stripe', payment_reference = 'Stripe - $pi_id', payment_invoice_id = $invoice_id");
-    mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Paid', history_description = 'Online Payment added (client) - $ip - $os - $browser', history_invoice_id = $invoice_id");
+    $payment_method_label = $pi_is_ach ? 'Stripe ACH (Pending)' : 'Stripe';
+    mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $stripe_account, payment_method = '$payment_method_label', payment_reference = 'Stripe - $pi_id', payment_invoice_id = $invoice_id");
+    mysqli_query($mysqli, "INSERT INTO history SET history_status = '$new_invoice_status', history_description = 'Online Payment added (client) - $ip - $os - $browser', history_invoice_id = $invoice_id");
 
     // Notify
-    appNotify("Invoice Paid", "Invoice $invoice_prefix$invoice_number has been paid by $client_name - $ip - $os - $browser", "/agent/invoice.php?invoice_id=$invoice_id", $pi_client_id);
+    $notify_suffix = $pi_is_ach ? ' (ACH - Pending Settlement)' : '';
+    appNotify("Invoice Paid", "Invoice $invoice_prefix$invoice_number has been paid by $client_name$notify_suffix - $ip - $os - $browser", "/agent/invoice.php?invoice_id=$invoice_id", $pi_client_id);
 
     customAction('invoice_pay', $invoice_id);
 
     $extended_log_desc = '';
     if (!$pi_livemode) {
         $extended_log_desc = '(DEV MODE)';
+    }
+    if ($pi_is_ach) {
+        $extended_log_desc .= ' (ACH - Pending Settlement)';
     }
     mysqli_query($mysqli, "INSERT INTO logs SET log_type = 'Payment', log_action = 'Create', log_description = 'Stripe payment of $pi_currency $pi_amount_paid against invoice $invoice_prefix$invoice_number - $pi_id $extended_log_desc', log_ip = '$ip', log_user_agent = '$user_agent', log_client_id = $pi_client_id");
 
