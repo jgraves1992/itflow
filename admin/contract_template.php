@@ -10,7 +10,8 @@ require_once "includes/inc_all_admin.php";
 $sql = mysqli_query(
     $mysqli,
     "SELECT SQL_CALC_FOUND_ROWS * FROM contract_templates
-    WHERE contract_template_name LIKE '%$q%' OR contract_template_type LIKE '%$q%' OR contract_template_name LIKE '%$q%'
+    WHERE contract_template_archived_at IS NULL
+    AND (contract_template_name LIKE '%$q%' OR contract_template_type LIKE '%$q%')
     ORDER BY $sort $order LIMIT $record_from, $record_to"
 );
 
@@ -45,55 +46,55 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     <tr>
                         <th>Template Name</th>
                         <th>Type</th>
-                        <th>Update Frequency</th>
-                        <th>SLA (L/M/H Response)</th>
-                        <th>SLA (L/M/H Resolution)</th>
-                        <th>Hourly Rate</th>
-                        <th>After Hours Rate</th>
-                        <th>Support Hours</th>
+                        <th>Renewal</th>
+                        <th>SLA Response (L/M/H hrs)</th>
+                        <th>SLA Resolution (L/M/H hrs)</th>
+                        <th>Standard Rate</th>
+                        <th>After-Hours Rate</th>
                         <th>Net Terms</th>
+                        <th>Support Hours</th>
                         <th>Created</th>
                         <th>Updated</th>
                         <th class="text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php
-                        while ($row = mysqli_fetch_assoc($sql)) {
-                            $id = intval($row['contract_template_id']);
-                            $name = nullable_htmlentities($row['contract_template_name']);
-                            $type = nullable_htmlentities($row['contract_template_type']);
-                            $freq = nullable_htmlentities($row['contract_template_update_frequency']);
-                            $sla_low_resp = nullable_htmlentities($row['sla_low_response_time']);
-                            $sla_med_resp = nullable_htmlentities($row['sla_medium_response_time']);
-                            $sla_high_resp = nullable_htmlentities($row['sla_high_response_time']);
-                            $sla_low_res = nullable_htmlentities($row['sla_low_resolution_time']);
-                            $sla_med_res = nullable_htmlentities($row['sla_medium_resolution_time']);
-                            $sla_high_res = nullable_htmlentities($row['sla_high_resolution_time']);
-                            $hourly_rate = nullable_htmlentities($row['contract_template_hourly_rate']);
-                            $after_hours = nullable_htmlentities($row['contract_template_after_hours_hourly_rate']);
-                            $support_hours = nullable_htmlentities($row['contract_template_support_hours']);
-                            $net_terms = nullable_htmlentities($row['contract_template_net_terms']);
-                            $created = nullable_htmlentities($row['contract_template_created_at']);
-                            $updated = nullable_htmlentities($row['contract_template_updated_at']);
+                    <?php while ($row = mysqli_fetch_assoc($sql)) {
+                        $id           = intval($row['contract_template_id']);
+                        $name         = nullable_htmlentities($row['contract_template_name']);
+                        $description  = nullable_htmlentities($row['contract_template_description']);
+                        $type         = nullable_htmlentities($row['contract_template_type']);
+                        $renewal      = nullable_htmlentities($row['contract_template_renewal_frequency']);
+                        $sla_low_resp = nullable_htmlentities($row['contract_template_sla_low_response_time']);
+                        $sla_med_resp = nullable_htmlentities($row['contract_template_sla_medium_response_time']);
+                        $sla_high_resp= nullable_htmlentities($row['contract_template_sla_high_response_time']);
+                        $sla_low_res  = nullable_htmlentities($row['contract_template_sla_low_resolution_time']);
+                        $sla_med_res  = nullable_htmlentities($row['contract_template_sla_medium_resolution_time']);
+                        $sla_high_res = nullable_htmlentities($row['contract_template_sla_high_resolution_time']);
+                        $rate_std     = nullable_htmlentities($row['contract_template_rate_standard']);
+                        $rate_ah      = nullable_htmlentities($row['contract_template_rate_after_hours']);
+                        $net_terms    = nullable_htmlentities($row['contract_template_net_terms']);
+                        $support_hrs  = nullable_htmlentities($row['contract_template_support_hours']);
+                        $created      = nullable_htmlentities($row['contract_template_created_at']);
+                        $updated      = nullable_htmlentities($row['contract_template_updated_at']);
                     ?>
                     <tr>
                         <td>
-                            <a class="text-bold" href="contract_template_details.php?contract_template_id=<?php echo $id; ?>">
-                                <i class="fas fa-fw fa-file-alt text-dark"></i> <?php echo $name; ?>
-                            </a>
-                            <div class="mt-1 text-secondary"><?php echo nullable_htmlentities($row['contract_template_description']); ?></div>
+                            <span class="text-bold"><i class="fas fa-fw fa-file-contract text-dark mr-1"></i><?= $name ?></span>
+                            <?php if ($description) { ?>
+                                <div class="mt-1 text-secondary small"><?= $description ?></div>
+                            <?php } ?>
                         </td>
-                        <td><?php echo $type; ?></td>
-                        <td><?php echo $freq; ?></td>
-                        <td><?php echo "$sla_low_resp / $sla_med_resp / $sla_high_resp"; ?></td>
-                        <td><?php echo "$sla_low_res / $sla_med_res / $sla_high_res"; ?></td>
-                        <td><?php echo $hourly_rate; ?></td>
-                        <td><?php echo $after_hours; ?></td>
-                        <td><?php echo $support_hours; ?></td>
-                        <td><?php echo $net_terms; ?></td>
-                        <td><?php echo $created; ?></td>
-                        <td><?php echo $updated; ?></td>
+                        <td><?= $type ?></td>
+                        <td><?= $renewal ?: '-' ?></td>
+                        <td><?= "$sla_low_resp / $sla_med_resp / $sla_high_resp" ?></td>
+                        <td><?= "$sla_low_res / $sla_med_res / $sla_high_res" ?></td>
+                        <td><?= $rate_std ? '$' . number_format($rate_std, 2) . '/hr' : '-' ?></td>
+                        <td><?= $rate_ah  ? '$' . number_format($rate_ah, 2)  . '/hr' : '-' ?></td>
+                        <td><?= $net_terms ?: '-' ?></td>
+                        <td><?= $support_hrs ?: '-' ?></td>
+                        <td><?= $created ?></td>
+                        <td><?= $updated ?: '-' ?></td>
                         <td>
                             <div class="dropdown dropleft text-center">
                                 <button class="btn btn-secondary btn-sm" type="button" data-toggle="dropdown">
@@ -101,12 +102,13 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                                 </button>
                                 <div class="dropdown-menu">
                                     <a class="dropdown-item ajax-modal" href="#"
-                                        data-modal-size="xl"
+                                        data-modal-size="lg"
                                         data-modal-url="modals/contract_template/contract_template_edit.php?id=<?= $id ?>">
                                         <i class="fas fa-fw fa-edit mr-2"></i>Edit
                                     </a>
                                     <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item text-danger text-bold" href="post.php?delete_contract_template=<?php echo $id; ?>">
+                                    <a class="dropdown-item text-danger text-bold confirm-link"
+                                        href="post.php?delete_contract_template=<?= $id ?>&csrf_token=<?= $_SESSION['csrf_token'] ?>">
                                         <i class="fas fa-fw fa-trash mr-2"></i>Delete
                                     </a>
                                 </div>
