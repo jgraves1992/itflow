@@ -296,6 +296,20 @@
                             </a>
                         </li>
 
+                        <li class="nav-item">
+                            <a href="/agent/contracts.php?client_id=<?php echo $client_id; ?>" class="nav-link <?php if (basename($_SERVER["PHP_SELF"]) == "contracts.php" || basename($_SERVER["PHP_SELF"]) == "contract.php") { echo "active"; } ?>">
+                                <i class="nav-icon fas fa-file-contract"></i>
+                                <p>
+                                    Contracts
+                                    <?php
+                                    $num_client_contracts = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT COUNT(*) AS num FROM contracts WHERE contract_client_id = $client_id AND contract_archived_at IS NULL"))['num'];
+                                    if ($num_client_contracts > 0) { ?>
+                                        <span class="right badge text-light"><?php echo $num_client_contracts; ?></span>
+                                    <?php } ?>
+                                </p>
+                            </a>
+                        </li>
+
                     <?php } ?>
 
                     <?php if (lookupUserPermission("module_financial") >= 1) { ?>

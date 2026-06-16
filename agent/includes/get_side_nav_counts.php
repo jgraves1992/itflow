@@ -32,3 +32,7 @@ $num_open_quotes = $row['num'];
 // Recurring Expenses Count
 $row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT COUNT('recurring_expense_id') AS num FROM recurring_expenses WHERE recurring_expense_archived_at IS NULL"));
 $num_recurring_expenses = $row['num'];
+
+// Active Contracts Count
+$row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT COUNT('contract_id') AS num FROM contracts WHERE contract_status = 'Active' AND contract_archived_at IS NULL"));
+$num_active_contracts = $row['num'];

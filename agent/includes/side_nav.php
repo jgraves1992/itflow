@@ -124,6 +124,17 @@
                             <p>Products</p>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="/agent/contracts.php" class="nav-link <?php if (basename($_SERVER["PHP_SELF"]) == "contracts.php" || basename($_SERVER["PHP_SELF"]) == "contract.php") { echo "active"; } ?>">
+                            <i class="nav-icon fas fa-file-contract"></i>
+                            <p>
+                                Contracts
+                                <?php if (!empty($num_active_contracts)) { ?>
+                                    <span class="right badge text-light" data-toggle="tooltip" title="Active Contracts"><?php echo $num_active_contracts; ?></span>
+                                <?php } ?>
+                            </p>
+                        </a>
+                    </li>
                 <?php } ?>
 
                 <?php if ($config_module_enable_accounting == 1) { ?>
