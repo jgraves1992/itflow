@@ -345,13 +345,15 @@ ob_start();
                         </div>
                         <select class="form-control select2" name="sync_source">
                             <option value="">- None -</option>
-                            <option <?= $software_sync_source === 'Huntress' ? 'selected' : '' ?>>Huntress</option>
+                            <option value="Huntress MDR"  <?= in_array($software_sync_source, ['Huntress MDR',  'Huntress']) ? 'selected' : '' ?>>Huntress MDR (Endpoints)</option>
+                            <option value="Huntress SAT"  <?= $software_sync_source === 'Huntress SAT'  ? 'selected' : '' ?>>Huntress SAT (Learners)</option>
+                            <option value="Huntress ITDR" <?= $software_sync_source === 'Huntress ITDR' ? 'selected' : '' ?>>Huntress ITDR (Identities)</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>External ID <small class="text-muted">(Huntress: Organization ID)</small></label>
+                    <label>External ID <small class="text-muted">(Huntress Organization ID)</small></label>
                     <div class="input-group">
                         <div class="input-group-prepend">
                             <span class="input-group-text"><i class="fa fa-fw fa-hashtag"></i></span>
@@ -359,7 +361,7 @@ ob_start();
                         <input type="text" class="form-control" name="sync_external_id"
                             placeholder="e.g. 12345" value="<?= $software_sync_external_id ?>">
                     </div>
-                    <small class="text-muted">Find the Organization ID in Huntress portal &rarr; Account &rarr; Organizations.</small>
+                    <small class="text-muted">Find the Organization ID in the Huntress portal under Account &rarr; Organizations. All three products use the same ID.</small>
                 </div>
 
                 <?php if ($software_sync_last_at) { ?>
