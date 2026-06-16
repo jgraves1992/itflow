@@ -1281,30 +1281,39 @@ if ($huntress_api_key && $huntress_api_secret) {
         $org_id        = intval($sw['software_sync_external_id']);
         $sw_client_id  = intval($sw['software_client_id']);
 
-        // Fetch agent count from Huntress — limit=1 so we only need pagination.total_items
-        $url = "https://api.huntress.io/v1/agents?organization_id=$org_id&limit=1";
-        $ctx = stream_context_create(['http' => [
-            'method'        => 'GET',
-            'header'        => $auth_header . "\r\nContent-Type: application/json\r\n",
-            'timeout'       => 15,
-            'ignore_errors' => true,
-        ]]);
+        // Page through all agents for this org and count them
+        $seat_count = 0;
+        $page       = 1;
+        $per_page   = 500;
 
-        $result = @file_get_contents($url, false, $ctx);
+        do {
+            $url = "https://api.huntress.io/v1/agents?organization_id=$org_id&limit=$per_page&page=$page";
+            $ctx = stream_context_create(['http' => [
+                'method'        => 'GET',
+                'header'        => $auth_header . "\r\nContent-Type: application/json\r\n",
+                'timeout'       => 15,
+                'ignore_errors' => true,
+            ]]);
 
-        if ($result === false) {
-            logApp("Huntress Sync", "error", "API request failed for software_id $software_id (org $org_id)");
-            continue;
-        }
+            $result = @file_get_contents($url, false, $ctx);
 
-        $data = json_decode($result, true);
+            if ($result === false) {
+                logApp("Huntress Sync", "error", "API request failed for software_id $software_id (org $org_id, page $page)");
+                break;
+            }
 
-        if (!isset($data['pagination']['total_items'])) {
-            logApp("Huntress Sync", "error", "Unexpected API response for software_id $software_id: " . substr($result, 0, 200));
-            continue;
-        }
+            $data = json_decode($result, true);
 
-        $seat_count = intval($data['pagination']['total_items']);
+            if (!isset($data['agents']) || !is_array($data['agents'])) {
+                logApp("Huntress Sync", "error", "Unexpected API response for software_id $software_id: " . substr($result, 0, 200));
+                break;
+            }
+
+            $page_count  = count($data['agents']);
+            $seat_count += $page_count;
+            $page++;
+
+        } while ($page_count === $per_page); // keep paging if we got a full page
 
         mysqli_query($mysqli, "UPDATE software SET software_seats = $seat_count, software_sync_last_at = NOW() WHERE software_id = $software_id");
 
