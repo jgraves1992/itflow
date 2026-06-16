@@ -1253,6 +1253,67 @@ if ($updates->current_version !== $updates->latest_version) {
 
 /*
  * ###############################################################################################################
+ *  INTEGRATION SYNCS
+ * ###############################################################################################################
+ */
+
+// HUNTRESS — sync agent counts into software seat fields
+$huntress_settings = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT config_huntress_api_key, config_huntress_api_secret FROM settings WHERE company_id = 1"));
+$huntress_api_key    = trim($huntress_settings['config_huntress_api_key'] ?? '');
+$huntress_api_secret = trim($huntress_settings['config_huntress_api_secret'] ?? '');
+
+if ($huntress_api_key && $huntress_api_secret) {
+
+    $auth_header = 'Authorization: Basic ' . base64_encode("$huntress_api_key:$huntress_api_secret");
+
+    $sql_huntress_sw = mysqli_query($mysqli, "
+        SELECT software_id, software_name, software_sync_external_id, software_client_id
+        FROM software
+        WHERE software_sync_source = 'Huntress'
+        AND software_sync_external_id IS NOT NULL
+        AND software_sync_external_id != ''
+        AND software_archived_at IS NULL
+    ");
+
+    while ($sw = mysqli_fetch_assoc($sql_huntress_sw)) {
+        $software_id   = intval($sw['software_id']);
+        $software_name = sanitizeInput($sw['software_name']);
+        $org_id        = intval($sw['software_sync_external_id']);
+        $sw_client_id  = intval($sw['software_client_id']);
+
+        // Fetch agent count from Huntress — limit=1 so we only need pagination.total_items
+        $url = "https://api.huntress.io/v1/agents?organization_id=$org_id&limit=1";
+        $ctx = stream_context_create(['http' => [
+            'method'        => 'GET',
+            'header'        => $auth_header . "\r\nContent-Type: application/json\r\n",
+            'timeout'       => 15,
+            'ignore_errors' => true,
+        ]]);
+
+        $result = @file_get_contents($url, false, $ctx);
+
+        if ($result === false) {
+            logApp("Huntress Sync", "error", "API request failed for software_id $software_id (org $org_id)");
+            continue;
+        }
+
+        $data = json_decode($result, true);
+
+        if (!isset($data['pagination']['total_items'])) {
+            logApp("Huntress Sync", "error", "Unexpected API response for software_id $software_id: " . substr($result, 0, 200));
+            continue;
+        }
+
+        $seat_count = intval($data['pagination']['total_items']);
+
+        mysqli_query($mysqli, "UPDATE software SET software_seats = $seat_count, software_sync_last_at = NOW() WHERE software_id = $software_id");
+
+        logApp("Huntress Sync", "info", "Updated '$software_name' (id: $software_id) to $seat_count seats from Huntress org $org_id");
+    }
+}
+
+/*
+ * ###############################################################################################################
  *  FINISH UP
  * ###############################################################################################################
  */

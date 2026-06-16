@@ -21,6 +21,9 @@ $software_notes = nullable_htmlentities($row['software_notes']);
 $software_created_at = nullable_htmlentities($row['software_created_at']);
 $software_vendor_id = intval($row['software_vendor_id']);
 $client_id = intval($row['software_client_id']);
+$software_sync_source      = nullable_htmlentities($row['software_sync_source'] ?? '');
+$software_sync_external_id = nullable_htmlentities($row['software_sync_external_id'] ?? '');
+$software_sync_last_at     = nullable_htmlentities($row['software_sync_last_at'] ?? '');
 $seat_count = 0;
 
 // Device Licenses
@@ -81,6 +84,9 @@ ob_start();
             </li>
             <li class="nav-item">
                 <a class="nav-link" data-toggle="pill" href="#pills-notes<?php echo $software_id; ?>">Notes</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="pill" href="#pills-sync<?php echo $software_id; ?>">Sync</a>
             </li>
         </ul>
 
@@ -324,6 +330,43 @@ ob_start();
             <div class="tab-pane fade" id="pills-notes<?php echo $software_id; ?>">
 
                 <textarea class="form-control" rows="12" placeholder="Enter some notes" name="notes"><?php echo $software_notes; ?></textarea>
+
+            </div>
+
+            <div class="tab-pane fade" id="pills-sync<?php echo $software_id; ?>">
+
+                <p class="text-muted small mb-3"><i class="fas fa-info-circle mr-1"></i>When a sync source is configured, the cron job will automatically update the <strong>Seats</strong> count from the external tool.</p>
+
+                <div class="form-group">
+                    <label>Sync Source</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fa fa-fw fa-plug"></i></span>
+                        </div>
+                        <select class="form-control select2" name="sync_source">
+                            <option value="">- None -</option>
+                            <option <?= $software_sync_source === 'Huntress' ? 'selected' : '' ?>>Huntress</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>External ID <small class="text-muted">(Huntress: Organization ID)</small></label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fa fa-fw fa-hashtag"></i></span>
+                        </div>
+                        <input type="text" class="form-control" name="sync_external_id"
+                            placeholder="e.g. 12345" value="<?= $software_sync_external_id ?>">
+                    </div>
+                    <small class="text-muted">Find the Organization ID in Huntress portal &rarr; Account &rarr; Organizations.</small>
+                </div>
+
+                <?php if ($software_sync_last_at) { ?>
+                    <div class="alert alert-secondary py-2">
+                        <i class="fas fa-sync-alt mr-2"></i>Last synced: <strong><?= $software_sync_last_at ?></strong>
+                    </div>
+                <?php } ?>
 
             </div>
 

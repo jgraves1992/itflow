@@ -49,3 +49,4 @@ plugins/htmlpurifier/standalone/HTMLPurifier/DefinitionCache/Serializer/CSS/*
 
 !api/v1/custom/readme.php
 .zed
+huntress_migration.sql
