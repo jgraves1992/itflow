@@ -102,7 +102,6 @@
                 <?php if ($config_module_enable_itdoc) { ?>
                     <li class="nav-header">TEMPLATES</li>
 
-                    <!-- 2025-11-16 JQ - Hide Contracts not yet ready
                     <li class="nav-item">
                         <a href="/admin/contract_template.php" class="nav-link <?php echo (basename($_SERVER['PHP_SELF']) == 'contract_template.php' ? 'active' : ''); ?>">
                             <i class="nav-icon fas fa-file-contract"></i>
@@ -112,7 +111,6 @@
                             </p>
                         </a>
                     </li>
-                    -->
                     <li class="nav-item">
                         <a href="/admin/project_template.php" class="nav-link <?php echo (in_array(basename($_SERVER['PHP_SELF']), ['project_template.php', 'project_template_details.php']) ? 'active' : ''); ?>">
                             <i class="nav-icon fas fa-project-diagram"></i>
