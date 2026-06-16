@@ -386,54 +386,36 @@ ob_start();
 <script>
 var contractTemplates = <?= $templates_json ?>;
 
-var templateSelect = document.getElementById('contractTemplateSelect');
-if (templateSelect) {
-    templateSelect.addEventListener('change', function() {
-        var id = this.value;
-        if (!id || !contractTemplates[id]) return;
-        var d = contractTemplates[id];
+$(document).on('change', '#contractTemplateSelect', function() {
+    var id = $(this).val();
+    if (!id || !contractTemplates[id]) return;
+    var d = contractTemplates[id];
 
-        // Set type dropdown
-        var typeEl = document.getElementById('contractTypeField');
-        if (typeEl && d.contract_template_type) {
-            for (var i = 0; i < typeEl.options.length; i++) {
-                if (typeEl.options[i].value === d.contract_template_type) {
-                    typeEl.selectedIndex = i; break;
-                }
-            }
+    if (d.contract_template_type) {
+        $('#contractTypeField').val(d.contract_template_type).trigger('change');
+    }
+    if (d.contract_template_renewal_frequency) {
+        $('#contractRenewalField').val(d.contract_template_renewal_frequency).trigger('change');
+    }
+
+    var fields = {
+        slaLowResp:   d.contract_template_sla_low_response_time,
+        slaLowRes:    d.contract_template_sla_low_resolution_time,
+        slaMedResp:   d.contract_template_sla_medium_response_time,
+        slaMedRes:    d.contract_template_sla_medium_resolution_time,
+        slaHighResp:  d.contract_template_sla_high_response_time,
+        slaHighRes:   d.contract_template_sla_high_resolution_time,
+        rateStd:      d.contract_template_rate_standard,
+        rateAH:       d.contract_template_rate_after_hours,
+        netTerms:     d.contract_template_net_terms,
+        supportHours: d.contract_template_support_hours
+    };
+    $.each(fields, function(elId, val) {
+        if (val !== null && val !== undefined && val !== '') {
+            $('#' + elId).val(val);
         }
-
-        // Set renewal dropdown
-        var renewEl = document.getElementById('contractRenewalField');
-        if (renewEl && d.contract_template_renewal_frequency) {
-            for (var i = 0; i < renewEl.options.length; i++) {
-                if (renewEl.options[i].value === d.contract_template_renewal_frequency) {
-                    renewEl.selectedIndex = i; break;
-                }
-            }
-        }
-
-        // Set numeric/text inputs
-        var fieldMap = {
-            slaLowResp:   d.contract_template_sla_low_response_time,
-            slaLowRes:    d.contract_template_sla_low_resolution_time,
-            slaMedResp:   d.contract_template_sla_medium_response_time,
-            slaMedRes:    d.contract_template_sla_medium_resolution_time,
-            slaHighResp:  d.contract_template_sla_high_response_time,
-            slaHighRes:   d.contract_template_sla_high_resolution_time,
-            rateStd:      d.contract_template_rate_standard,
-            rateAH:       d.contract_template_rate_after_hours,
-            netTerms:     d.contract_template_net_terms,
-            supportHours: d.contract_template_support_hours
-        };
-        Object.keys(fieldMap).forEach(function(elId) {
-            var el = document.getElementById(elId);
-            if (el && fieldMap[elId] !== null && fieldMap[elId] !== undefined && fieldMap[elId] !== '0') {
-                el.value = fieldMap[elId];
-            }
-        });
     });
-}
+});
 </script>
 
 <?php require_once '../../../includes/modal_footer.php'; ?>
