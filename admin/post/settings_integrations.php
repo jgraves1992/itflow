@@ -18,3 +18,18 @@ if (isset($_POST['save_settings_huntress'])) {
     flash_alert("Huntress integration settings saved");
     redirect("/admin/settings_integrations.php");
 }
+
+if (isset($_POST['save_settings_levelio'])) {
+
+    validateCSRFToken($_POST['csrf_token']);
+
+    $levelio_api_key = sanitizeInput($_POST['config_levelio_api_key']);
+
+    mysqli_query($mysqli, "UPDATE settings SET
+        config_levelio_api_key = '$levelio_api_key'
+        WHERE company_id = 1");
+
+    logAction("Settings", "Update", "$session_name updated Level.io integration settings");
+    flash_alert("Level.io integration settings saved");
+    redirect("/admin/settings_integrations.php");
+}

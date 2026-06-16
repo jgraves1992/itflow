@@ -1,9 +1,10 @@
 <?php
 require_once "includes/inc_all_admin.php";
 
-$row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT config_huntress_api_key, config_huntress_api_secret FROM settings WHERE company_id = 1"));
+$row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT config_huntress_api_key, config_huntress_api_secret, config_levelio_api_key FROM settings WHERE company_id = 1"));
 $config_huntress_api_key    = nullable_htmlentities($row['config_huntress_api_key'] ?? '');
 $config_huntress_api_secret = nullable_htmlentities($row['config_huntress_api_secret'] ?? '');
+$config_levelio_api_key     = nullable_htmlentities($row['config_levelio_api_key'] ?? '');
 ?>
 
 <div class="card card-dark">
@@ -12,8 +13,9 @@ $config_huntress_api_secret = nullable_htmlentities($row['config_huntress_api_se
     </div>
     <div class="card-body">
 
+        <!-- Huntress -->
         <h5 class="mb-1"><i class="fas fa-shield-alt mr-2 text-muted"></i>Huntress</h5>
-        <p class="text-muted small mb-3">Enables automatic seat-count sync from Huntress into software license records. Runs on each cron execution.</p>
+        <p class="text-muted small mb-3">Syncs MDR, SAT, and ITDR seat counts into software license records on each cron run.</p>
 
         <form action="post.php" method="post" autocomplete="off">
             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
@@ -42,6 +44,32 @@ $config_huntress_api_secret = nullable_htmlentities($row['config_huntress_api_se
             </div>
 
             <button type="submit" name="save_settings_huntress" class="btn btn-primary">
+                <i class="fa fa-check mr-2"></i>Save
+            </button>
+        </form>
+
+        <hr>
+
+        <!-- Level.io -->
+        <h5 class="mb-1 mt-3"><i class="fas fa-laptop mr-2 text-muted"></i>Level.io</h5>
+        <p class="text-muted small mb-3">Syncs device counts per client group into software license records on each cron run.</p>
+
+        <form action="post.php" method="post" autocomplete="off">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+
+            <div class="form-group">
+                <label>API Key</label>
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fa fa-fw fa-key"></i></span>
+                    </div>
+                    <input type="text" class="form-control" name="config_levelio_api_key"
+                        placeholder="Level.io API Key" value="<?= $config_levelio_api_key ?>">
+                </div>
+                <small class="text-muted">Found in Level.io portal under Settings &rarr; API.</small>
+            </div>
+
+            <button type="submit" name="save_settings_levelio" class="btn btn-primary">
                 <i class="fa fa-check mr-2"></i>Save
             </button>
         </form>

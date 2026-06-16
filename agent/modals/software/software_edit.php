@@ -348,20 +348,24 @@ ob_start();
                             <option value="Huntress MDR"  <?= in_array($software_sync_source, ['Huntress MDR',  'Huntress']) ? 'selected' : '' ?>>Huntress MDR (Endpoints)</option>
                             <option value="Huntress SAT"  <?= $software_sync_source === 'Huntress SAT'  ? 'selected' : '' ?>>Huntress SAT (Learners)</option>
                             <option value="Huntress ITDR" <?= $software_sync_source === 'Huntress ITDR' ? 'selected' : '' ?>>Huntress ITDR (Identities)</option>
+                            <option value="Level.io"      <?= $software_sync_source === 'Level.io'      ? 'selected' : '' ?>>Level.io (Devices)</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>External ID <small class="text-muted">(Huntress Organization ID)</small></label>
+                    <label>External ID</label>
                     <div class="input-group">
                         <div class="input-group-prepend">
                             <span class="input-group-text"><i class="fa fa-fw fa-hashtag"></i></span>
                         </div>
                         <input type="text" class="form-control" name="sync_external_id"
-                            placeholder="e.g. 12345" value="<?= $software_sync_external_id ?>">
+                            placeholder="e.g. 12345 or Z2lkOi8v..." value="<?= $software_sync_external_id ?>">
                     </div>
-                    <small class="text-muted">Find the Organization ID in the Huntress portal under Account &rarr; Organizations. All three products use the same ID.</small>
+                    <small class="text-muted">
+                        <strong>Huntress</strong>: Organization ID (Account &rarr; Organizations) — same ID for MDR, SAT &amp; ITDR.<br>
+                        <strong>Level.io</strong>: Group ID for this client (the base64 string from the URL).
+                    </small>
                 </div>
 
                 <?php if ($software_sync_last_at) { ?>

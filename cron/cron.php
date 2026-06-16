@@ -1338,6 +1338,56 @@ if ($huntress_api_key && $huntress_api_secret) {
     }
 }
 
+// LEVEL.IO — sync device counts per client group into software seat fields
+$levelio_settings = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT config_levelio_api_key FROM settings WHERE company_id = 1"));
+$levelio_api_key  = trim($levelio_settings['config_levelio_api_key'] ?? '');
+
+if ($levelio_api_key) {
+
+    $sql_levelio_sw = mysqli_query($mysqli, "
+        SELECT software_id, software_name, software_sync_external_id
+        FROM software
+        WHERE software_sync_source = 'Level.io'
+        AND software_sync_external_id IS NOT NULL
+        AND software_sync_external_id != ''
+        AND software_archived_at IS NULL
+    ");
+
+    while ($sw = mysqli_fetch_assoc($sql_levelio_sw)) {
+        $software_id   = intval($sw['software_id']);
+        $software_name = sanitizeInput($sw['software_name']);
+        $group_id      = sanitizeInput($sw['software_sync_external_id']);
+
+        $url = "https://api.level.io/v2/groups/" . urlencode($group_id);
+        $ctx = stream_context_create(['http' => [
+            'method'        => 'GET',
+            'header'        => "Authorization: $levelio_api_key\r\nAccept: application/json\r\n",
+            'timeout'       => 15,
+            'ignore_errors' => true,
+        ]]);
+
+        $result = @file_get_contents($url, false, $ctx);
+
+        if ($result === false) {
+            logApp("Level.io Sync", "error", "API request failed for software_id $software_id (group $group_id)");
+            continue;
+        }
+
+        $data = json_decode($result, true);
+
+        if (!isset($data['descendent_device_count'])) {
+            logApp("Level.io Sync", "error", "Unexpected API response for software_id $software_id: " . substr($result, 0, 200));
+            continue;
+        }
+
+        $seat_count = intval($data['descendent_device_count']);
+
+        mysqli_query($mysqli, "UPDATE software SET software_seats = $seat_count, software_sync_last_at = NOW() WHERE software_id = $software_id");
+
+        logApp("Level.io Sync", "info", "Updated '$software_name' (id: $software_id) to $seat_count devices from Level.io group $group_id");
+    }
+}
+
 /*
  * ###############################################################################################################
  *  FINISH UP
