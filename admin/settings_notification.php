@@ -77,7 +77,59 @@ require_once "includes/inc_all_admin.php";
                                 <td></td>
                             </tr>
                             <tr>
+                                <th>
+                                    <div><i class="fas fa-fw fa-cube mr-2"></i>Software License Expiration Notice</div>
+                                    <small class="text-muted">
+                                        (Triggers a notification when a software license is approaching its expiration date, specifically at 30, 60 and 90 days prior to expiry.)
+                                    </small>
+                                </th>
+                                <td>
+                                </td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <th>
+                                    <div><i class="fas fa-fw fa-file-contract mr-2"></i>Contract Expiration Notice</div>
+                                    <small class="text-muted">
+                                        (Triggers a notification when an active contract is approaching its end date, specifically at 30, 60 and 90 days prior.)
+                                    </small>
+                                </th>
+                                <td>
+                                </td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <th>
+                                    <div><i class="fas fa-fw fa-comment-dollar mr-2"></i>Quote Expiration Notice</div>
+                                    <small class="text-muted">
+                                        (Triggers a notification when a quote still awaiting a decision &mdash; Draft, Sent or Viewed &mdash; is approaching its expiration date, specifically at 1, 7 and 45 days prior.)
+                                    </small>
+                                </th>
+                                <td>
+                                </td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
                                 <th colspan=5>Billing</th>
+                            </tr>
+                            <tr>
+                                <th>
+                                    <div><i class="fas fa-fw fa-sync-alt mr-2"></i>Contract Auto-Renewal / Expiration</div>
+                                    <small class="text-muted">
+                                        (On a contract's end date: contracts with a renewal frequency other than Manual are automatically renewed &mdash; the end date is advanced and a notification sent. Contracts set to Manual renewal are instead marked Expired and require manual follow-up.)
+                                    </small>
+                                </th>
+                                <td>
+                                </td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
                             </tr>
                             <tr>
                                 <th>

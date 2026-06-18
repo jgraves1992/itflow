@@ -278,6 +278,32 @@ foreach ($warranty_alert_array as $day) {
 // Logging
 // logAction("Cron", "Task", "Cron created notifications for asset warranties expiring");
 
+// Software Licenses Expiring
+$software_alert_array = [30, 60, 90];
+
+foreach ($software_alert_array as $day) {
+
+    $sql = mysqli_query(
+        $mysqli,
+        "SELECT * FROM software
+        LEFT JOIN clients ON software_client_id = client_id
+        WHERE software_expire = CURDATE() + INTERVAL $day DAY
+        AND software_archived_at IS NULL"
+    );
+
+    while ($row = mysqli_fetch_assoc($sql)) {
+        $software_id = intval($row['software_id']);
+        $software_name = sanitizeInput($row['software_name']);
+        $software_expire = sanitizeInput($row['software_expire']);
+        $client_id = intval($row['client_id']);
+        $client_name = sanitizeInput($row['client_name']);
+
+        appNotify("Software License Expiring", "Software license $software_name for $client_name will expire in $day Days on $software_expire", "/agent/software.php?client_id=$client_id", $client_id);
+    }
+}
+// Logging
+// logAction("Cron", "Task", "Cron created notifications for software licenses expiring");
+
 // Contracts Expiring — heads-up alerts ahead of the end date
 $contract_alert_array = [30, 60, 90];
 
@@ -565,6 +591,34 @@ while ($row = mysqli_fetch_assoc($sql_resolved_tickets_to_close)) {
 
     //TODO: Add client notifs if $config_ticket_client_general_notifications is on
 }
+
+// Quotes Expiring — only for quotes still awaiting a decision
+$quote_alert_array = [1, 7, 45];
+
+foreach ($quote_alert_array as $day) {
+
+    $sql = mysqli_query(
+        $mysqli,
+        "SELECT * FROM quotes
+        LEFT JOIN clients ON quote_client_id = client_id
+        WHERE quote_status IN ('Draft', 'Sent', 'Viewed')
+        AND quote_archived_at IS NULL
+        AND quote_expire = CURDATE() + INTERVAL $day DAY"
+    );
+
+    while ($row = mysqli_fetch_assoc($sql)) {
+        $quote_id = intval($row['quote_id']);
+        $quote_prefix = sanitizeInput($row['quote_prefix']);
+        $quote_number = intval($row['quote_number']);
+        $quote_expire = sanitizeInput($row['quote_expire']);
+        $client_id = intval($row['client_id']);
+        $client_name = sanitizeInput($row['client_name']);
+
+        appNotify("Quote Expiring", "Quote $quote_prefix$quote_number for $client_name will expire in $day Days on $quote_expire", "/agent/quote.php?quote_id=$quote_id", $client_id);
+    }
+}
+// Logging
+// logAction("Cron", "Task", "Cron created notifications for quotes expiring");
 
 if ($config_send_invoice_reminders == 1) {
 
