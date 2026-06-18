@@ -278,6 +278,85 @@ foreach ($warranty_alert_array as $day) {
 // Logging
 // logAction("Cron", "Task", "Cron created notifications for asset warranties expiring");
 
+// Contracts Expiring — heads-up alerts ahead of the end date
+$contract_alert_array = [30, 60, 90];
+
+foreach ($contract_alert_array as $day) {
+
+    $sql = mysqli_query(
+        $mysqli,
+        "SELECT * FROM contracts
+        LEFT JOIN clients ON contract_client_id = client_id
+        WHERE contract_status = 'Active'
+        AND contract_archived_at IS NULL
+        AND contract_end_date = CURDATE() + INTERVAL $day DAY"
+    );
+
+    while ($row = mysqli_fetch_assoc($sql)) {
+        $contract_id = intval($row['contract_id']);
+        $contract_name = sanitizeInput($row['contract_name']);
+        $contract_end_date = sanitizeInput($row['contract_end_date']);
+        $contract_renewal_frequency = sanitizeInput($row['contract_renewal_frequency']);
+        $client_id = intval($row['client_id']);
+        $client_name = sanitizeInput($row['client_name']);
+
+        $renewal_note = (!empty($contract_renewal_frequency) && $contract_renewal_frequency !== 'Manual')
+            ? "will auto-renew"
+            : "requires manual renewal";
+
+        appNotify("Contract Expiring", "Contract $contract_name for $client_name will expire in $day Days on $contract_end_date ($renewal_note)", "/agent/contract.php?contract_id=$contract_id", $client_id);
+    }
+}
+
+// Contracts reaching their end date today — auto-renew or expire
+$contract_renewal_intervals = [
+    'Annually' => '1 YEAR',
+    '2 Year'   => '2 YEAR',
+    '3 Year'   => '3 YEAR',
+    '5 Year'   => '5 YEAR',
+    '7 Year'   => '7 YEAR',
+];
+
+$sql_contracts_due = mysqli_query(
+    $mysqli,
+    "SELECT * FROM contracts
+    LEFT JOIN clients ON contract_client_id = client_id
+    WHERE contract_status = 'Active'
+    AND contract_archived_at IS NULL
+    AND contract_end_date = CURDATE()"
+);
+
+while ($row = mysqli_fetch_assoc($sql_contracts_due)) {
+    $contract_id = intval($row['contract_id']);
+    $contract_name = sanitizeInput($row['contract_name']);
+    $contract_renewal_frequency = sanitizeInput($row['contract_renewal_frequency']);
+    $client_id = intval($row['client_id']);
+    $client_name = sanitizeInput($row['client_name']);
+
+    if (isset($contract_renewal_intervals[$contract_renewal_frequency])) {
+        // Auto-renew: push the end date forward, keep status Active
+        $interval = $contract_renewal_intervals[$contract_renewal_frequency];
+
+        mysqli_query($mysqli, "UPDATE contracts SET contract_end_date = DATE_ADD(contract_end_date, INTERVAL $interval) WHERE contract_id = $contract_id LIMIT 1");
+
+        $new_end_date = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT contract_end_date FROM contracts WHERE contract_id = $contract_id"))['contract_end_date'];
+
+        logAction("Contract", "Renew", "Cron auto-renewed contract $contract_name ($contract_renewal_frequency) — new end date $new_end_date", $client_id, $contract_id);
+
+        appNotify("Contract Renewed", "Contract $contract_name for $client_name was automatically renewed through $new_end_date", "/agent/contract.php?contract_id=$contract_id", $client_id);
+
+    } else {
+        // Manual or unset renewal frequency — expire and require human follow-up
+        mysqli_query($mysqli, "UPDATE contracts SET contract_status = 'Expired' WHERE contract_id = $contract_id LIMIT 1");
+
+        logAction("Contract", "Expire", "Cron marked contract $contract_name as Expired (manual renewal required)", $client_id, $contract_id);
+
+        appNotify("Contract Expired", "Contract $contract_name for $client_name has expired and requires manual renewal", "/agent/contract.php?contract_id=$contract_id", $client_id);
+    }
+}
+// Logging
+// logAction("Cron", "Task", "Cron processed contract expiration alerts and renewals");
+
 // Notify of New Tickets
 // Get Ticket Pending Assignment
 $sql_tickets_pending_assignment = mysqli_query($mysqli,"SELECT ticket_id FROM tickets WHERE ticket_status = 1");
