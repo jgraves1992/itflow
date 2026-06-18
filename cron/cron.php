@@ -578,6 +578,149 @@ if ($config_send_invoice_reminders == 1) {
 // Logging
 // logAction("Cron", "Task", "Cron created notifications for past due invoices and sent out notifications to the primary and billing contacts email");
 
+/*
+ * ###############################################################################################################
+ *  INTEGRATION SYNCS
+ *  Runs before recurring invoice generation below, so freshly synced seat counts are reflected
+ *  in any invoices generated later in this same cron run.
+ * ###############################################################################################################
+ */
+
+// HUNTRESS — sync MDR / SAT / ITDR seat counts into software records
+$huntress_settings = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT config_huntress_api_key, config_huntress_api_secret FROM settings WHERE company_id = 1"));
+$huntress_api_key    = trim($huntress_settings['config_huntress_api_key'] ?? '');
+$huntress_api_secret = trim($huntress_settings['config_huntress_api_secret'] ?? '');
+
+if ($huntress_api_key && $huntress_api_secret) {
+
+    $auth_header = 'Authorization: Basic ' . base64_encode("$huntress_api_key:$huntress_api_secret");
+
+    // Collect all software records that need a Huntress sync, grouped by org ID
+    // 'Huntress' is the legacy value — treated as MDR
+    $sql_huntress_sw = mysqli_query($mysqli, "
+        SELECT software_id, software_name, software_sync_source, software_sync_external_id
+        FROM software
+        WHERE software_sync_source IN ('Huntress', 'Huntress MDR', 'Huntress SAT', 'Huntress ITDR')
+        AND software_sync_external_id IS NOT NULL
+        AND software_sync_external_id != ''
+        AND software_archived_at IS NULL
+    ");
+
+    $org_map = []; // org_id => [['software_id', 'software_name', 'sync_source'], ...]
+    while ($sw = mysqli_fetch_assoc($sql_huntress_sw)) {
+        $org_id = intval($sw['software_sync_external_id']);
+        $org_map[$org_id][] = $sw;
+    }
+
+    // One API call per org regardless of how many products are tracked for that client
+    foreach ($org_map as $org_id => $sw_list) {
+
+        $url = "https://api.huntress.io/v1/organizations/$org_id";
+        $ctx = stream_context_create(['http' => [
+            'method'        => 'GET',
+            'header'        => $auth_header . "\r\nContent-Type: application/json\r\n",
+            'timeout'       => 15,
+            'ignore_errors' => true,
+        ]]);
+
+        $result = @file_get_contents($url, false, $ctx);
+
+        if ($result === false) {
+            logApp("Huntress Sync", "error", "API request failed for org $org_id");
+            continue;
+        }
+
+        $data = json_decode($result, true);
+        $org  = $data['organization'] ?? null;
+
+        if (!$org) {
+            logApp("Huntress Sync", "error", "Unexpected API response for org $org_id: " . substr($result, 0, 200));
+            continue;
+        }
+
+        $usages = $org['actual_usages'] ?? [];
+
+        $mdr_count  = intval($usages['edr']['billable_agents_count'] ?? 0);
+        $sat_count  = intval($usages['sat']['learners_count'] ?? 0);
+        $itdr_count = 0;
+        foreach ($usages['itdr'] ?? [] as $tenant) {
+            $itdr_count += intval($tenant['billable_identities_count'] ?? 0);
+        }
+
+        foreach ($sw_list as $sw) {
+            $software_id   = intval($sw['software_id']);
+            $software_name = sanitizeInput($sw['software_name']);
+            $source        = $sw['software_sync_source'];
+
+            if ($source === 'Huntress SAT') {
+                $seat_count = $sat_count;
+            } elseif ($source === 'Huntress ITDR') {
+                $seat_count = $itdr_count;
+            } else {
+                $seat_count = $mdr_count; // 'Huntress MDR' and legacy 'Huntress'
+            }
+
+            mysqli_query($mysqli, "UPDATE software SET software_seats = $seat_count, software_sync_last_at = NOW() WHERE software_id = $software_id");
+
+            syncRecurringInvoiceItemsBySoftwareId($software_id, $seat_count);
+
+            logApp("Huntress Sync", "info", "Updated '$software_name' (id: $software_id) to $seat_count seats [$source] from Huntress org $org_id");
+        }
+    }
+}
+
+// LEVEL.IO — sync device counts per client group into software seat fields
+$levelio_settings = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT config_levelio_api_key FROM settings WHERE company_id = 1"));
+$levelio_api_key  = trim($levelio_settings['config_levelio_api_key'] ?? '');
+
+if ($levelio_api_key) {
+
+    $sql_levelio_sw = mysqli_query($mysqli, "
+        SELECT software_id, software_name, software_sync_external_id
+        FROM software
+        WHERE software_sync_source = 'Level.io'
+        AND software_sync_external_id IS NOT NULL
+        AND software_sync_external_id != ''
+        AND software_archived_at IS NULL
+    ");
+
+    while ($sw = mysqli_fetch_assoc($sql_levelio_sw)) {
+        $software_id   = intval($sw['software_id']);
+        $software_name = sanitizeInput($sw['software_name']);
+        $group_id      = sanitizeInput($sw['software_sync_external_id']);
+
+        $url = "https://api.level.io/v2/groups/" . urlencode($group_id);
+        $ctx = stream_context_create(['http' => [
+            'method'        => 'GET',
+            'header'        => "Authorization: $levelio_api_key\r\nAccept: application/json\r\n",
+            'timeout'       => 15,
+            'ignore_errors' => true,
+        ]]);
+
+        $result = @file_get_contents($url, false, $ctx);
+
+        if ($result === false) {
+            logApp("Level.io Sync", "error", "API request failed for software_id $software_id (group $group_id)");
+            continue;
+        }
+
+        $data = json_decode($result, true);
+
+        if (!isset($data['descendent_device_count'])) {
+            logApp("Level.io Sync", "error", "Unexpected API response for software_id $software_id: " . substr($result, 0, 200));
+            continue;
+        }
+
+        $seat_count = intval($data['descendent_device_count']);
+
+        mysqli_query($mysqli, "UPDATE software SET software_seats = $seat_count, software_sync_last_at = NOW() WHERE software_id = $software_id");
+
+        syncRecurringInvoiceItemsBySoftwareId($software_id, $seat_count);
+
+        logApp("Level.io Sync", "info", "Updated '$software_name' (id: $software_id) to $seat_count devices from Level.io group $group_id");
+    }
+}
+
 // Send Recurring Invoices that match todays date and are active
 
 //Loop through all recurring that match today's date and is active
@@ -1250,143 +1393,6 @@ if ($updates->current_version !== $updates->latest_version) {
 }
 
 
-
-/*
- * ###############################################################################################################
- *  INTEGRATION SYNCS
- * ###############################################################################################################
- */
-
-// HUNTRESS — sync MDR / SAT / ITDR seat counts into software records
-$huntress_settings = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT config_huntress_api_key, config_huntress_api_secret FROM settings WHERE company_id = 1"));
-$huntress_api_key    = trim($huntress_settings['config_huntress_api_key'] ?? '');
-$huntress_api_secret = trim($huntress_settings['config_huntress_api_secret'] ?? '');
-
-if ($huntress_api_key && $huntress_api_secret) {
-
-    $auth_header = 'Authorization: Basic ' . base64_encode("$huntress_api_key:$huntress_api_secret");
-
-    // Collect all software records that need a Huntress sync, grouped by org ID
-    // 'Huntress' is the legacy value — treated as MDR
-    $sql_huntress_sw = mysqli_query($mysqli, "
-        SELECT software_id, software_name, software_sync_source, software_sync_external_id
-        FROM software
-        WHERE software_sync_source IN ('Huntress', 'Huntress MDR', 'Huntress SAT', 'Huntress ITDR')
-        AND software_sync_external_id IS NOT NULL
-        AND software_sync_external_id != ''
-        AND software_archived_at IS NULL
-    ");
-
-    $org_map = []; // org_id => [['software_id', 'software_name', 'sync_source'], ...]
-    while ($sw = mysqli_fetch_assoc($sql_huntress_sw)) {
-        $org_id = intval($sw['software_sync_external_id']);
-        $org_map[$org_id][] = $sw;
-    }
-
-    // One API call per org regardless of how many products are tracked for that client
-    foreach ($org_map as $org_id => $sw_list) {
-
-        $url = "https://api.huntress.io/v1/organizations/$org_id";
-        $ctx = stream_context_create(['http' => [
-            'method'        => 'GET',
-            'header'        => $auth_header . "\r\nContent-Type: application/json\r\n",
-            'timeout'       => 15,
-            'ignore_errors' => true,
-        ]]);
-
-        $result = @file_get_contents($url, false, $ctx);
-
-        if ($result === false) {
-            logApp("Huntress Sync", "error", "API request failed for org $org_id");
-            continue;
-        }
-
-        $data = json_decode($result, true);
-        $org  = $data['organization'] ?? null;
-
-        if (!$org) {
-            logApp("Huntress Sync", "error", "Unexpected API response for org $org_id: " . substr($result, 0, 200));
-            continue;
-        }
-
-        $usages = $org['actual_usages'] ?? [];
-
-        $mdr_count  = intval($usages['edr']['billable_agents_count'] ?? 0);
-        $sat_count  = intval($usages['sat']['learners_count'] ?? 0);
-        $itdr_count = 0;
-        foreach ($usages['itdr'] ?? [] as $tenant) {
-            $itdr_count += intval($tenant['billable_identities_count'] ?? 0);
-        }
-
-        foreach ($sw_list as $sw) {
-            $software_id   = intval($sw['software_id']);
-            $software_name = sanitizeInput($sw['software_name']);
-            $source        = $sw['software_sync_source'];
-
-            if ($source === 'Huntress SAT') {
-                $seat_count = $sat_count;
-            } elseif ($source === 'Huntress ITDR') {
-                $seat_count = $itdr_count;
-            } else {
-                $seat_count = $mdr_count; // 'Huntress MDR' and legacy 'Huntress'
-            }
-
-            mysqli_query($mysqli, "UPDATE software SET software_seats = $seat_count, software_sync_last_at = NOW() WHERE software_id = $software_id");
-
-            logApp("Huntress Sync", "info", "Updated '$software_name' (id: $software_id) to $seat_count seats [$source] from Huntress org $org_id");
-        }
-    }
-}
-
-// LEVEL.IO — sync device counts per client group into software seat fields
-$levelio_settings = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT config_levelio_api_key FROM settings WHERE company_id = 1"));
-$levelio_api_key  = trim($levelio_settings['config_levelio_api_key'] ?? '');
-
-if ($levelio_api_key) {
-
-    $sql_levelio_sw = mysqli_query($mysqli, "
-        SELECT software_id, software_name, software_sync_external_id
-        FROM software
-        WHERE software_sync_source = 'Level.io'
-        AND software_sync_external_id IS NOT NULL
-        AND software_sync_external_id != ''
-        AND software_archived_at IS NULL
-    ");
-
-    while ($sw = mysqli_fetch_assoc($sql_levelio_sw)) {
-        $software_id   = intval($sw['software_id']);
-        $software_name = sanitizeInput($sw['software_name']);
-        $group_id      = sanitizeInput($sw['software_sync_external_id']);
-
-        $url = "https://api.level.io/v2/groups/" . urlencode($group_id);
-        $ctx = stream_context_create(['http' => [
-            'method'        => 'GET',
-            'header'        => "Authorization: $levelio_api_key\r\nAccept: application/json\r\n",
-            'timeout'       => 15,
-            'ignore_errors' => true,
-        ]]);
-
-        $result = @file_get_contents($url, false, $ctx);
-
-        if ($result === false) {
-            logApp("Level.io Sync", "error", "API request failed for software_id $software_id (group $group_id)");
-            continue;
-        }
-
-        $data = json_decode($result, true);
-
-        if (!isset($data['descendent_device_count'])) {
-            logApp("Level.io Sync", "error", "Unexpected API response for software_id $software_id: " . substr($result, 0, 200));
-            continue;
-        }
-
-        $seat_count = intval($data['descendent_device_count']);
-
-        mysqli_query($mysqli, "UPDATE software SET software_seats = $seat_count, software_sync_last_at = NOW() WHERE software_id = $software_id");
-
-        logApp("Level.io Sync", "info", "Updated '$software_name' (id: $software_id) to $seat_count devices from Level.io group $group_id");
-    }
-}
 
 /*
  * ###############################################################################################################

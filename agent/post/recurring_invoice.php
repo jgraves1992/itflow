@@ -268,6 +268,12 @@ if (isset($_POST['edit_recurring_invoice_item'])) {
     $price = floatval($_POST['price']);
     $tax_id = intval($_POST['tax_id']);
     $product_id = intval($_POST['product_id']);
+    $item_software_id = intval($_POST['item_software_id'] ?? 0);
+
+    // When linked to a software license, quantity always reflects the current seat count
+    if ($item_software_id > 0) {
+        $qty = floatval(getFieldById('software', $item_software_id, 'software_seats'));
+    }
 
     $subtotal = $price * $qty;
 
@@ -297,7 +303,7 @@ if (isset($_POST['edit_recurring_invoice_item'])) {
 
     enforceClientAccess();
 
-    mysqli_query($mysqli,"UPDATE recurring_invoice_items SET item_name = '$name', item_description = '$description', item_quantity = $qty, item_price = $price, item_subtotal = $subtotal, item_tax = $tax_amount, item_total = $total, item_tax_id = $tax_id WHERE item_id = $item_id");
+    mysqli_query($mysqli,"UPDATE recurring_invoice_items SET item_name = '$name', item_description = '$description', item_quantity = $qty, item_price = $price, item_subtotal = $subtotal, item_tax = $tax_amount, item_total = $total, item_tax_id = $tax_id, item_software_id = " . ($item_software_id > 0 ? $item_software_id : "NULL") . " WHERE item_id = $item_id");
 
     //Update Invoice Balances by tallying up invoice items
     $sql_recurring_invoice_total = mysqli_query($mysqli,"SELECT SUM(item_total) AS recurring_invoice_total FROM recurring_invoice_items WHERE item_recurring_invoice_id = $recurring_invoice_id");

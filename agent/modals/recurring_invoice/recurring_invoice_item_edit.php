@@ -13,6 +13,14 @@ $item_price = floatval($row['item_price']);
 $item_created_at = nullable_htmlentities($row['item_created_at']);
 $tax_id = intval($row['item_tax_id']);
 $product_id = intval($row['item_product_id']);
+$item_software_id = intval($row['item_software_id'] ?? 0);
+$recurring_invoice_id = intval($row['item_recurring_invoice_id']);
+
+$client_id = intval(getFieldById('recurring_invoices', $recurring_invoice_id, 'recurring_invoice_client_id'));
+
+$sql_software = mysqli_query($mysqli, "SELECT software_id, software_name, software_seats FROM software
+    WHERE software_client_id = $client_id AND software_archived_at IS NULL
+    ORDER BY software_name ASC");
 
 // Generate the HTML form content using output buffering.
 ob_start();
@@ -94,6 +102,26 @@ ob_start();
                     ?>
                 </select>
             </div>
+        </div>
+
+        <div class="form-group">
+            <label>Linked Software License <small class="text-muted">(optional)</small></label>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fa fa-fw fa-link"></i></span>
+                </div>
+                <select class="form-control select2" name="item_software_id">
+                    <option value="0">- None -</option>
+                    <?php while ($sw = mysqli_fetch_assoc($sql_software)) {
+                        $sw_id    = intval($sw['software_id']);
+                        $sw_name  = nullable_htmlentities($sw['software_name']);
+                        $sw_seats = intval($sw['software_seats']);
+                    ?>
+                        <option <?= $sw_id === $item_software_id ? 'selected' : '' ?> value="<?= $sw_id ?>"><?= $sw_name ?> (<?= $sw_seats ?> seats)</option>
+                    <?php } ?>
+                </select>
+            </div>
+            <small class="text-muted">When linked, this line item's quantity is automatically kept in sync with the license's seat count on each cron run.</small>
         </div>
     </div>
 
