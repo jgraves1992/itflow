@@ -10,7 +10,7 @@ $sequence = mysqli_fetch_assoc(mysqli_query($mysqli,
     "SELECT * FROM marketing_sequences WHERE sequence_id = $sequence_id AND sequence_archived_at IS NULL"));
 
 if (!$sequence) {
-    $_SESSION['error'] = 'Sequence not found.';
+    flash_alert('Sequence not found.', 'error');
     header('Location: marketing_sequences.php');
     exit;
 }

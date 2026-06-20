@@ -13,7 +13,7 @@ $step_body    = $_POST['step_body'] ?? '';
 $step_delay   = max(0, intval($_POST['step_delay_days'] ?? 0));
 
 if (!$step_id || !$step_subject || !$step_body) {
-    $_SESSION['error'] = 'Subject and body are required.';
+    flash_alert('Subject and body are required.', 'error');
     header("Location: /agent/custom/marketing_sequence_details.php?id=$sequence_id");
     exit;
 }
@@ -26,6 +26,6 @@ mysqli_query($mysqli,
      SET step_subject='$subj', step_body='$body', step_delay_days=$step_delay
      WHERE step_id=$step_id AND step_sequence_id=$sequence_id");
 
-$_SESSION['success'] = 'Step updated.';
+flash_alert('Step updated.');
 header("Location: /agent/custom/marketing_sequence_details.php?id=$sequence_id");
 exit;

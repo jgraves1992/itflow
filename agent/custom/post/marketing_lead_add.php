@@ -17,13 +17,13 @@ $valid_statuses = ['new', 'contacted', 'qualified', 'converted', 'lost'];
 $lead_status = in_array($_POST['lead_status'] ?? '', $valid_statuses) ? $_POST['lead_status'] : 'new';
 
 if (!$lead_name || !$lead_email) {
-    $_SESSION['error'] = 'Name and email are required.';
+    flash_alert('Name and email are required.', 'error');
     header('Location: /agent/custom/marketing_leads.php');
     exit;
 }
 
 if (!filter_var($lead_email, FILTER_VALIDATE_EMAIL)) {
-    $_SESSION['error'] = 'Invalid email address.';
+    flash_alert('Invalid email address.', 'error');
     header('Location: /agent/custom/marketing_leads.php');
     exit;
 }
@@ -32,7 +32,7 @@ $existing = mysqli_fetch_assoc(mysqli_query($mysqli,
     "SELECT lead_id FROM marketing_leads WHERE lead_email = '" . mysqli_real_escape_string($mysqli, $lead_email) . "' AND lead_archived_at IS NULL"));
 
 if ($existing) {
-    $_SESSION['error'] = 'A lead with that email already exists.';
+    flash_alert('A lead with that email already exists.', 'error');
     header('Location: /agent/custom/marketing_leads.php');
     exit;
 }
@@ -87,6 +87,6 @@ try {
     // ITFlow client creation failed — marketing lead was still saved
 }
 
-$_SESSION['success'] = "Lead <strong>$lead_name</strong> added successfully.";
+flash_alert("Lead <strong>$lead_name</strong> added successfully.");
 header("Location: /agent/custom/marketing_lead_details.php?id=$new_id");
 exit;

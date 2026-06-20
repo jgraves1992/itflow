@@ -12,7 +12,7 @@ $step_body    = $_POST['step_body'] ?? ''; // Allow HTML from TinyMCE
 $step_delay   = max(0, intval($_POST['step_delay_days'] ?? 0));
 
 if (!$sequence_id || !$step_subject || !$step_body) {
-    $_SESSION['error'] = 'Subject and body are required.';
+    flash_alert('Subject and body are required.', 'error');
     header("Location: /agent/custom/marketing_sequence_details.php?id=$sequence_id");
     exit;
 }
@@ -29,6 +29,6 @@ mysqli_query($mysqli,
     "INSERT INTO marketing_sequence_steps (step_sequence_id, step_order, step_delay_days, step_subject, step_body)
      VALUES ($sequence_id, $step_order, $step_delay, '$subj', '$body')");
 
-$_SESSION['success'] = "Step $step_order added.";
+flash_alert("Step $step_order added.");
 header("Location: /agent/custom/marketing_sequence_details.php?id=$sequence_id");
 exit;

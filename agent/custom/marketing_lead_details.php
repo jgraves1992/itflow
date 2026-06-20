@@ -10,7 +10,7 @@ $lead = mysqli_fetch_assoc(mysqli_query($mysqli,
     "SELECT * FROM marketing_leads WHERE lead_id = $lead_id AND lead_archived_at IS NULL"));
 
 if (!$lead) {
-    $_SESSION['error'] = 'Lead not found.';
+    flash_alert('Lead not found.', 'error');
     header('Location: marketing_leads.php');
     exit;
 }

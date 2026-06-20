@@ -22,6 +22,6 @@ mysqli_query($mysqli,
 mysqli_query($mysqli,
     "UPDATE marketing_sequences SET sequence_archived_at = NOW() WHERE sequence_id = $sequence_id");
 
-$_SESSION['success'] = 'Sequence archived.';
+flash_alert('Sequence archived.');
 header('Location: /agent/custom/marketing_sequences.php');
 exit;

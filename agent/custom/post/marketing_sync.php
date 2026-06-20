@@ -30,6 +30,6 @@ mysqli_query($mysqli,
 
 $imported = mysqli_affected_rows($mysqli);
 
-$_SESSION['success'] = "Synced <strong>$imported</strong> client(s) from ITFlow into marketing leads.";
+flash_alert("Synced <strong>$imported</strong> client(s) from ITFlow into marketing leads.");
 header('Location: /agent/custom/marketing_leads.php');
 exit;

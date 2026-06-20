@@ -17,6 +17,6 @@ if (!$enrollment_id) {
 mysqli_query($mysqli,
     "DELETE FROM marketing_enrollments WHERE enrollment_id = $enrollment_id");
 
-$_SESSION['success'] = 'Lead removed from sequence.';
+flash_alert('Lead removed from sequence.');
 header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");
 exit;

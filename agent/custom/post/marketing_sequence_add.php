@@ -13,13 +13,13 @@ $from_email     = sanitizeInput($_POST['sequence_from_email'] ?? '');
 $send_time      = preg_match('/^\d{2}:\d{2}$/', $_POST['sequence_send_time'] ?? '') ? $_POST['sequence_send_time'] . ':00' : '09:00:00';
 
 if (!$sequence_name) {
-    $_SESSION['error'] = 'Sequence name is required.';
+    flash_alert('Sequence name is required.', 'error');
     header('Location: ../marketing_sequences.php');
     exit;
 }
 
 if ($from_email && !filter_var($from_email, FILTER_VALIDATE_EMAIL)) {
-    $_SESSION['error'] = 'Invalid from email address.';
+    flash_alert('Invalid from email address.', 'error');
     header('Location: ../marketing_sequences.php');
     exit;
 }
@@ -35,6 +35,6 @@ mysqli_query($mysqli,
 
 $new_id = mysqli_insert_id($mysqli);
 
-$_SESSION['success'] = "Sequence <strong>$sequence_name</strong> created. Add your first email step below.";
+flash_alert("Sequence <strong>$sequence_name</strong> created. Add your first email step below.");
 header("Location: /agent/custom/marketing_sequence_details.php?id=$new_id");
 exit;

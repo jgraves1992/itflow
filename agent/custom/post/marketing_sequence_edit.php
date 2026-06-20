@@ -15,13 +15,13 @@ $active        = intval($_POST['sequence_active'] ?? 1) ? 1 : 0;
 $send_time     = preg_match('/^\d{2}:\d{2}$/', $_POST['sequence_send_time'] ?? '') ? $_POST['sequence_send_time'] . ':00' : '09:00:00';
 
 if (!$sequence_id || !$sequence_name) {
-    $_SESSION['error'] = 'Sequence name is required.';
+    flash_alert('Sequence name is required.', 'error');
     header("Location: /agent/custom/marketing_sequence_details.php?id=$sequence_id");
     exit;
 }
 
 if ($from_email && !filter_var($from_email, FILTER_VALIDATE_EMAIL)) {
-    $_SESSION['error'] = 'Invalid from email address.';
+    flash_alert('Invalid from email address.', 'error');
     header("Location: /agent/custom/marketing_sequence_details.php?id=$sequence_id");
     exit;
 }
@@ -38,6 +38,6 @@ mysqli_query($mysqli,
          sequence_active=$active, sequence_send_time='$send_time'
      WHERE sequence_id=$sequence_id");
 
-$_SESSION['success'] = 'Sequence updated.';
+flash_alert('Sequence updated.');
 header("Location: /agent/custom/marketing_sequence_details.php?id=$sequence_id");
 exit;

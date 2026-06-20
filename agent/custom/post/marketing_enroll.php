@@ -10,7 +10,7 @@ $lead_id     = intval($_POST['lead_id'] ?? 0);
 $sequence_id = intval($_POST['sequence_id'] ?? 0);
 
 if (!$lead_id || !$sequence_id) {
-    $_SESSION['error'] = 'Invalid lead or sequence.';
+    flash_alert('Invalid lead or sequence.', 'error');
     header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");
     exit;
 }
@@ -20,13 +20,13 @@ $lead = mysqli_fetch_assoc(mysqli_query($mysqli,
     "SELECT * FROM marketing_leads WHERE lead_id = $lead_id AND lead_archived_at IS NULL"));
 
 if (!$lead) {
-    $_SESSION['error'] = 'Lead not found.';
+    flash_alert('Lead not found.', 'error');
     header("Location: /agent/custom/marketing_leads.php");
     exit;
 }
 
 if ($lead['lead_unsubscribed']) {
-    $_SESSION['error'] = 'Cannot enroll an unsubscribed lead.';
+    flash_alert('Cannot enroll an unsubscribed lead.', 'error');
     header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");
     exit;
 }
@@ -36,7 +36,7 @@ $sequence = mysqli_fetch_assoc(mysqli_query($mysqli,
     "SELECT * FROM marketing_sequences WHERE sequence_id = $sequence_id AND sequence_active = 1 AND sequence_archived_at IS NULL"));
 
 if (!$sequence) {
-    $_SESSION['error'] = 'Sequence not found or inactive.';
+    flash_alert('Sequence not found or inactive.', 'error');
     header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");
     exit;
 }
@@ -47,7 +47,7 @@ $existing = mysqli_fetch_assoc(mysqli_query($mysqli,
      WHERE enrollment_lead_id = $lead_id AND enrollment_sequence_id = $sequence_id"));
 
 if ($existing) {
-    $_SESSION['error'] = 'Lead is already enrolled in this sequence.';
+    flash_alert('Lead is already enrolled in this sequence.', 'error');
     header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");
     exit;
 }
@@ -58,7 +58,7 @@ $first_step = mysqli_fetch_assoc(mysqli_query($mysqli,
      WHERE step_sequence_id = $sequence_id ORDER BY step_order ASC LIMIT 1"));
 
 if (!$first_step) {
-    $_SESSION['error'] = 'Sequence has no steps. Add at least one email step first.';
+    flash_alert('Sequence has no steps. Add at least one email step first.', 'error');
     header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");
     exit;
 }
@@ -75,6 +75,6 @@ mysqli_query($mysqli,
         (enrollment_lead_id, enrollment_sequence_id, enrollment_next_step_id, enrollment_next_send_at)
      VALUES ($lead_id, $sequence_id, $first_step_id, '$next_send_at')");
 
-$_SESSION['success'] = 'Lead enrolled. First email will send on <strong>' . date('M j, Y g:i A', strtotime($next_send_at)) . '</strong>.';
+flash_alert('Lead enrolled. First email will send on <strong>' . date('M j, Y g:i A', strtotime($next_send_at)) . '</strong>.');
 header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");
 exit;

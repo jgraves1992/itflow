@@ -11,13 +11,13 @@ $lead_name = sanitizeInput($_POST['lead_name'] ?? '');
 $lead_email = sanitizeInput($_POST['lead_email'] ?? '');
 
 if (!$lead_id || !$lead_name || !$lead_email) {
-    $_SESSION['error'] = 'Missing required fields.';
+    flash_alert('Missing required fields.', 'error');
     header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");
     exit;
 }
 
 if (!filter_var($lead_email, FILTER_VALIDATE_EMAIL)) {
-    $_SESSION['error'] = 'Invalid email address.';
+    flash_alert('Invalid email address.', 'error');
     header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");
     exit;
 }
@@ -43,6 +43,6 @@ mysqli_query($mysqli,
          lead_source='$so', lead_notes='$no', lead_status='$st'
      WHERE lead_id=$lead_id");
 
-$_SESSION['success'] = 'Lead updated.';
+flash_alert('Lead updated.');
 header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");
 exit;

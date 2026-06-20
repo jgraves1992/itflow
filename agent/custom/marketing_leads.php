@@ -42,6 +42,13 @@ $status_colors = [
     'lost'      => 'danger',
 ];
 
+$can_enroll = lookupUserPermission('module_client') >= 2;
+
+$sequences_active_sql = mysqli_query($mysqli,
+    "SELECT sequence_id, sequence_name FROM marketing_sequences
+     WHERE sequence_active = 1 AND sequence_archived_at IS NULL
+     ORDER BY sequence_name");
+
 ?>
 
 <div class="card">
@@ -58,6 +65,11 @@ $status_colors = [
             <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addLeadModal">
                 <i class="fas fa-plus"></i> New Lead
             </button>
+            <?php if ($can_enroll): ?>
+            <button type="button" id="bulkEnrollBtn" class="btn btn-default btn-sm" disabled data-toggle="modal" data-target="#bulkEnrollModal">
+                <i class="fas fa-stream"></i> Enroll Selected (<span class="selectedCount">0</span>)
+            </button>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -93,6 +105,9 @@ $status_colors = [
         <table class="table table-hover table-sm">
             <thead>
                 <tr>
+                    <?php if ($can_enroll): ?>
+                    <th><input type="checkbox" id="selectAllLeads"></th>
+                    <?php endif; ?>
                     <th>Name</th>
                     <th>Company</th>
                     <th>Email</th>
@@ -106,7 +121,7 @@ $status_colors = [
             <tbody>
             <?php if (mysqli_num_rows($sql) === 0): ?>
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-4">
+                    <td colspan="<?= $can_enroll ? 9 : 8 ?>" class="text-center text-muted py-4">
                         No leads found. Click <strong>New Lead</strong> to add your first prospect.
                     </td>
                 </tr>
@@ -125,6 +140,13 @@ $status_colors = [
                      WHERE enrollment_lead_id = $lead_id AND enrollment_status = 'active'"))['cnt']);
             ?>
                 <tr>
+                    <?php if ($can_enroll): ?>
+                    <td>
+                        <?php if (!$row['lead_unsubscribed']): ?>
+                        <input type="checkbox" class="lead-checkbox" value="<?= $lead_id ?>">
+                        <?php endif; ?>
+                    </td>
+                    <?php endif; ?>
                     <td>
                         <a href="marketing_lead_details.php?id=<?= $lead_id ?>"><?= $lead_name ?></a>
                         <?php if ($row['lead_unsubscribed']): ?>
@@ -235,5 +257,79 @@ $status_colors = [
         </div>
     </div>
 </div>
+
+<?php if ($can_enroll): ?>
+<!-- Bulk Enroll Modal -->
+<div class="modal fade" id="bulkEnrollModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form id="bulkEnrollForm" action="post.php" method="POST">
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                <input type="hidden" name="bulk_enroll_marketing_leads" value="1">
+                <div id="bulkEnrollLeadIds"></div>
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-stream mr-2"></i>Enroll Selected Leads</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p><strong class="selectedCount">0</strong> lead(s) selected.</p>
+                    <div class="form-group">
+                        <label>Sequence <span class="text-danger">*</span></label>
+                        <select class="form-control" name="sequence_id" required>
+                            <option value="">- Select Sequence -</option>
+                            <?php while ($seq = mysqli_fetch_assoc($sequences_active_sql)): ?>
+                            <option value="<?= intval($seq['sequence_id']) ?>"><?= nullable_htmlentities($seq['sequence_name']) ?></option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    <small class="text-muted">Leads already enrolled in the chosen sequence will be skipped automatically.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane mr-1"></i>Enroll</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var selectAll  = document.getElementById('selectAllLeads');
+    var checkboxes = document.querySelectorAll('.lead-checkbox');
+    var bulkBtn    = document.getElementById('bulkEnrollBtn');
+    var countSpans = document.querySelectorAll('.selectedCount');
+
+    function updateBulkUI() {
+        var checkedCount = document.querySelectorAll('.lead-checkbox:checked').length;
+        bulkBtn.disabled = checkedCount === 0;
+        countSpans.forEach(function (span) { span.textContent = checkedCount; });
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            checkboxes.forEach(function (cb) { cb.checked = selectAll.checked; });
+            updateBulkUI();
+        });
+    }
+
+    checkboxes.forEach(function (cb) {
+        cb.addEventListener('change', updateBulkUI);
+    });
+
+    document.getElementById('bulkEnrollForm').addEventListener('submit', function () {
+        var container = document.getElementById('bulkEnrollLeadIds');
+        container.innerHTML = '';
+        document.querySelectorAll('.lead-checkbox:checked').forEach(function (cb) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'lead_ids[]';
+            input.value = cb.value;
+            container.appendChild(input);
+        });
+    });
+});
+</script>
+<?php endif; ?>
 
 <?php require_once "../../includes/footer.php"; ?>

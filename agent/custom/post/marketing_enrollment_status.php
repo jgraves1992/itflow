@@ -50,7 +50,7 @@ if ($new_status === 'active') {
                  SET enrollment_status = 'active', enrollment_next_send_at = '$next_send_at'
                  WHERE enrollment_id = $enrollment_id");
 
-            $_SESSION['success'] = 'Enrollment resumed.';
+            flash_alert('Enrollment resumed.');
             header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");
             exit;
         }
@@ -60,6 +60,6 @@ if ($new_status === 'active') {
 mysqli_query($mysqli,
     "UPDATE marketing_enrollments SET enrollment_status = '$new_status' WHERE enrollment_id = $enrollment_id");
 
-$_SESSION['success'] = 'Enrollment ' . ($new_status === 'paused' ? 'paused' : 'resumed') . '.';
+flash_alert('Enrollment ' . ($new_status === 'paused' ? 'paused' : 'resumed') . '.');
 header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");
 exit;

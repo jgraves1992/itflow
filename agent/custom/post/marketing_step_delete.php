@@ -33,6 +33,6 @@ while ($s = mysqli_fetch_assoc($steps)) {
     $order++;
 }
 
-$_SESSION['success'] = 'Step deleted.';
+flash_alert('Step deleted.');
 header("Location: /agent/custom/marketing_sequence_details.php?id=$sequence_id");
 exit;
