@@ -60,7 +60,7 @@ $balance = $invoice_amounts - $amount_paid;
         <?php if ($payment_provider_active && $bulk_payment_enabled) { // Currently not implmented fully ?>
         <button type="button" class="btn btn-outline-success dropdown-toggle float-right" data-toggle="dropdown"><i class="fa fa-fw fa-credit-card mr-2"></i>Pay Balance <strong>(<?php echo numfmt_format_currency($currency_format, $balance, $session_company_currency); ?>)</strong></button>
         <div class="dropdown-menu">
-            <a class="dropdown-item" href="//<?php echo $config_base_url ?>/guest/guest_pay_invoice_stripe.php?invoice_id=<?php echo "$invoice_id&url_key=$invoice_url_key"; ?>">Enter Card Manually</a>
+            <a class="dropdown-item" href="//<?php echo $config_base_url ?>/guest/guest_pay_invoice_stripe.php?invoice_id=<?php echo "$invoice_id&url_key=$invoice_url_key"; ?>">Pay with Card or Bank Account</a>
             <?php
             if (mysqli_num_rows($sql_saved_payment_methods) > 0) { ?>
                 <h6 class="dropdown-header text-left">Pay with a Saved Payment Method</h6>
@@ -154,7 +154,7 @@ $balance = $invoice_amounts - $amount_paid;
                         ){ ?>
                         <button type="button" class="btn btn-sm btn-outline-success dropdown-toggle" data-toggle="dropdown"><i class="fa fa-fw fa-credit-card mr-2"></i>Pay</button>
                         <div class="dropdown-menu">
-                            <a class="dropdown-item" href="//<?php echo $config_base_url ?>/guest/guest_pay_invoice_stripe.php?invoice_id=<?php echo "$invoice_id&url_key=$invoice_url_key"; ?>">Enter Card Manually</a>
+                            <a class="dropdown-item" href="//<?php echo $config_base_url ?>/guest/guest_pay_invoice_stripe.php?invoice_id=<?php echo "$invoice_id&url_key=$invoice_url_key"; ?>">Pay with Card or Bank Account</a>
 
                             <?php
                             // Saved Payment Methods
