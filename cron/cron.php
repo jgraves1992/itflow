@@ -800,6 +800,12 @@ if ($huntress_api_key && $huntress_api_secret) {
             logApp("Huntress Sync", "info", "Updated '$software_name' (id: $software_id) to $seat_count seats [$source] from Huntress org $org_id");
         }
     }
+
+    // Once every client's seats are up to date, recalc any consolidated vendor expense per product
+    syncRecurringExpensesBySyncSource('Huntress MDR');
+    syncRecurringExpensesBySyncSource('Huntress');
+    syncRecurringExpensesBySyncSource('Huntress SAT');
+    syncRecurringExpensesBySyncSource('Huntress ITDR');
 }
 
 // LEVEL.IO — sync device counts per client group into software seat fields
@@ -852,6 +858,9 @@ if ($levelio_api_key) {
 
         logApp("Level.io Sync", "info", "Updated '$software_name' (id: $software_id) to $seat_count devices from Level.io group $group_id");
     }
+
+    // Once every client's seats are up to date, recalc any consolidated vendor expense for Level.io
+    syncRecurringExpensesBySyncSource('Level.io');
 }
 
 // Send Recurring Invoices that match todays date and are active

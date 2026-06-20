@@ -24,6 +24,7 @@ $client_id = intval($row['software_client_id']);
 $software_sync_source      = nullable_htmlentities($row['software_sync_source'] ?? '');
 $software_sync_external_id = nullable_htmlentities($row['software_sync_external_id'] ?? '');
 $software_sync_last_at     = nullable_htmlentities($row['software_sync_last_at'] ?? '');
+$software_billing_exempt   = intval($row['software_billing_exempt'] ?? 0);
 $seat_count = 0;
 
 // Device Licenses
@@ -366,6 +367,14 @@ ob_start();
                         <strong>Huntress</strong>: Organization ID (Account &rarr; Organizations) — same ID for MDR, SAT &amp; ITDR.<br>
                         <strong>Level.io</strong>: Group ID for this client (the base64 string from the URL).
                     </small>
+                </div>
+
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="billingExempt<?php echo $software_id; ?>" name="billing_exempt" value="1" <?= $software_billing_exempt ? 'checked' : '' ?>>
+                        <label class="custom-control-label" for="billingExempt<?php echo $software_id; ?>">Exclude these seats from vendor billing totals</label>
+                    </div>
+                    <small class="text-muted">e.g. free/partner seats that don't count toward a consolidated vendor invoice. These seats still sync normally and still bill the client as usual.</small>
                 </div>
 
                 <?php if ($software_sync_last_at) { ?>

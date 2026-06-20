@@ -137,12 +137,13 @@ if (isset($_POST['edit_software'])) {
     $vendor = intval($_POST['vendor'] ?? 0);
     $sync_source      = sanitizeInput($_POST['sync_source'] ?? '');
     $sync_external_id = sanitizeInput($_POST['sync_external_id'] ?? '');
+    $billing_exempt   = isset($_POST['billing_exempt']) ? 1 : 0;
 
     $client_id = intval(getFieldById('software', $software_id, 'software_client_id'));
 
     enforceClientAccess();
 
-    mysqli_query($mysqli,"UPDATE software SET software_name = '$name', software_version = '$version', software_description = '$description', software_type = '$type', software_key = '$key', software_license_type = '$license_type', software_seats = $seats, software_purchase_reference = '$purchase_reference', software_purchase = $purchase, software_expire = $expire, software_notes = '$notes', software_vendor_id = $vendor, software_sync_source = " . ($sync_source ? "'$sync_source'" : "NULL") . ", software_sync_external_id = " . ($sync_external_id ? "'$sync_external_id'" : "NULL") . " WHERE software_id = $software_id");
+    mysqli_query($mysqli,"UPDATE software SET software_name = '$name', software_version = '$version', software_description = '$description', software_type = '$type', software_key = '$key', software_license_type = '$license_type', software_seats = $seats, software_purchase_reference = '$purchase_reference', software_purchase = $purchase, software_expire = $expire, software_notes = '$notes', software_vendor_id = $vendor, software_sync_source = " . ($sync_source ? "'$sync_source'" : "NULL") . ", software_sync_external_id = " . ($sync_external_id ? "'$sync_external_id'" : "NULL") . ", software_billing_exempt = $billing_exempt WHERE software_id = $software_id");
 
 
     // Update Asset Licenses

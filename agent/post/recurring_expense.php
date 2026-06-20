@@ -22,6 +22,20 @@ if (isset($_POST['create_recurring_expense'])) {
     $category = intval($_POST['category']);
     $description = sanitizeInput($_POST['description']);
     $reference = sanitizeInput($_POST['reference']);
+    $sync_source = sanitizeInput($_POST['sync_source'] ?? '');
+    $unit_cost = floatval(str_replace(',', '', $_POST['unit_cost'] ?? 0));
+    $quantity = 1;
+
+    // When tied to a vendor sync source, quantity is the total billable seats across every client
+    if ($sync_source) {
+        $seats_row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT COALESCE(SUM(software_seats), 0) AS total_seats
+            FROM software
+            WHERE software_sync_source = '$sync_source'
+            AND software_billing_exempt = 0
+            AND software_archived_at IS NULL"));
+        $quantity = floatval($seats_row['total_seats']) ?: 1;
+        $amount = round($quantity * $unit_cost, 2);
+    }
 
     $year = date('Y');
     if (strtotime("$year-$month-$day") < time()) {
@@ -29,7 +43,7 @@ if (isset($_POST['create_recurring_expense'])) {
     }
     $start_date = "$year-$month-$day";
 
-    mysqli_query($mysqli,"INSERT INTO recurring_expenses SET recurring_expense_frequency = $frequency, recurring_expense_day = $day, recurring_expense_month = $month, recurring_expense_next_date = '$start_date', recurring_expense_description = '$description', recurring_expense_reference = '$reference', recurring_expense_amount = $amount, recurring_expense_currency_code = '$session_company_currency', recurring_expense_vendor_id = $vendor, recurring_expense_client_id = $client_id, recurring_expense_category_id = $category, recurring_expense_account_id = $account");
+    mysqli_query($mysqli,"INSERT INTO recurring_expenses SET recurring_expense_frequency = $frequency, recurring_expense_day = $day, recurring_expense_month = $month, recurring_expense_next_date = '$start_date', recurring_expense_description = '$description', recurring_expense_reference = '$reference', recurring_expense_amount = $amount, recurring_expense_quantity = $quantity, recurring_expense_unit_cost = " . ($sync_source ? $unit_cost : "NULL") . ", recurring_expense_currency_code = '$session_company_currency', recurring_expense_vendor_id = $vendor, recurring_expense_client_id = $client_id, recurring_expense_category_id = $category, recurring_expense_account_id = $account, recurring_expense_sync_source = " . ($sync_source ? "'$sync_source'" : "NULL") . "");
 
     $recurring_expense_id = mysqli_insert_id($mysqli);
 
@@ -58,6 +72,20 @@ if (isset($_POST['edit_recurring_expense'])) {
     $category = intval($_POST['category']);
     $description = sanitizeInput($_POST['description']);
     $reference = sanitizeInput($_POST['reference']);
+    $sync_source = sanitizeInput($_POST['sync_source'] ?? '');
+    $unit_cost = floatval(str_replace(',', '', $_POST['unit_cost'] ?? 0));
+    $quantity = 1;
+
+    // When tied to a vendor sync source, quantity is the total billable seats across every client
+    if ($sync_source) {
+        $seats_row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT COALESCE(SUM(software_seats), 0) AS total_seats
+            FROM software
+            WHERE software_sync_source = '$sync_source'
+            AND software_billing_exempt = 0
+            AND software_archived_at IS NULL"));
+        $quantity = floatval($seats_row['total_seats']) ?: 1;
+        $amount = round($quantity * $unit_cost, 2);
+    }
 
     $year = date('Y');
     if (strtotime("$year-$month-$day") < time()) {
@@ -65,7 +93,7 @@ if (isset($_POST['edit_recurring_expense'])) {
     }
     $start_date = "$year-$month-$day";
 
-    mysqli_query($mysqli,"UPDATE recurring_expenses SET recurring_expense_frequency = $frequency, recurring_expense_day = $day, recurring_expense_month = $month, recurring_expense_next_date = '$start_date', recurring_expense_description = '$description', recurring_expense_reference = '$reference', recurring_expense_amount = $amount, recurring_expense_currency_code = '$session_company_currency', recurring_expense_vendor_id = $vendor, recurring_expense_client_id = $client_id, recurring_expense_category_id = $category, recurring_expense_account_id = $account WHERE recurring_expense_id = $recurring_expense_id");
+    mysqli_query($mysqli,"UPDATE recurring_expenses SET recurring_expense_frequency = $frequency, recurring_expense_day = $day, recurring_expense_month = $month, recurring_expense_next_date = '$start_date', recurring_expense_description = '$description', recurring_expense_reference = '$reference', recurring_expense_amount = $amount, recurring_expense_quantity = $quantity, recurring_expense_unit_cost = " . ($sync_source ? $unit_cost : "NULL") . ", recurring_expense_currency_code = '$session_company_currency', recurring_expense_vendor_id = $vendor, recurring_expense_client_id = $client_id, recurring_expense_category_id = $category, recurring_expense_account_id = $account, recurring_expense_sync_source = " . ($sync_source ? "'$sync_source'" : "NULL") . " WHERE recurring_expense_id = $recurring_expense_id");
 
     logAction("Recurring Expense", "Edit", "$session_name edited recurring expense $description", $client_id, $recurring_expense_id);
 

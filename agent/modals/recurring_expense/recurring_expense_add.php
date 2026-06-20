@@ -4,6 +4,19 @@ require_once '../../../includes/modal_header.php';
 
 $client_id = intval($_GET['client_id'] ?? 0);
 
+$sql_sync_sources = mysqli_query($mysqli, "
+    SELECT software_sync_source,
+        COUNT(*) AS client_count,
+        COALESCE(SUM(software_seats), 0) AS total_seats,
+        COALESCE(SUM(CASE WHEN software_billing_exempt = 1 THEN software_seats ELSE 0 END), 0) AS exempt_seats
+    FROM software
+    WHERE software_sync_source IS NOT NULL
+    AND software_sync_source != ''
+    AND software_archived_at IS NULL
+    GROUP BY software_sync_source
+    ORDER BY software_sync_source ASC
+");
+
 ob_start();
 
 ?>
@@ -79,6 +92,43 @@ ob_start();
                 </div>
             </div>
         </div>
+
+        <?php if (mysqli_num_rows($sql_sync_sources) > 0): ?>
+        <div class="form-row">
+            <div class="form-group col-md">
+                <label>Vendor Sync Source <small class="text-muted">(optional &mdash; for one consolidated bill across all clients)</small></label>
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fa fa-fw fa-link"></i></span>
+                    </div>
+                    <select class="form-control select2" name="sync_source">
+                        <option value="">- None -</option>
+                        <?php while ($src = mysqli_fetch_assoc($sql_sync_sources)) {
+                            $src_name     = nullable_htmlentities($src['software_sync_source']);
+                            $client_count = intval($src['client_count']);
+                            $total_seats  = intval($src['total_seats']);
+                            $exempt_seats = intval($src['exempt_seats']);
+                            $billable     = $total_seats - $exempt_seats;
+                        ?>
+                            <option value="<?= $src_name ?>">
+                                <?= $src_name ?> — <?= $billable ?> billable seat(s) across <?= $client_count ?> client(s)<?= $exempt_seats ? " ($exempt_seats exempt)" : '' ?>
+                            </option>
+                        <?php } ?>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group col-md">
+                <label>Unit Cost <small class="text-muted">(per seat)</small></label>
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fa fa-fw fa-dollar-sign"></i></span>
+                    </div>
+                    <input type="text" class="form-control" inputmode="decimal" pattern="-?[0-9]*\.?[0-9]{0,2}" name="unit_cost" placeholder="0.00">
+                </div>
+            </div>
+        </div>
+        <small class="text-muted d-block mb-3">When set, the Amount above is recalculated automatically (total billable seats across every client &times; unit cost) each time seats sync. Mark a license "billing exempt" on the software record to exclude free/partner seats from the total.</small>
+        <?php endif; ?>
 
         <div class="form-row">
 

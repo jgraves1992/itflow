@@ -24,6 +24,22 @@ $recurring_expense_vendor_id = intval($row['recurring_expense_vendor_id']);
 $recurring_expense_category_id = intval($row['recurring_expense_category_id']);
 $recurring_expense_account_id = intval($row['recurring_expense_account_id']);
 $recurring_expense_client_id = intval($row['recurring_expense_client_id']);
+$recurring_expense_sync_source = nullable_htmlentities($row['recurring_expense_sync_source'] ?? '');
+$recurring_expense_unit_cost = floatval($row['recurring_expense_unit_cost'] ?? 0);
+$recurring_expense_quantity = floatval($row['recurring_expense_quantity'] ?? 1);
+
+$sql_sync_sources = mysqli_query($mysqli, "
+    SELECT software_sync_source,
+        COUNT(*) AS client_count,
+        COALESCE(SUM(software_seats), 0) AS total_seats,
+        COALESCE(SUM(CASE WHEN software_billing_exempt = 1 THEN software_seats ELSE 0 END), 0) AS exempt_seats
+    FROM software
+    WHERE software_sync_source IS NOT NULL
+    AND software_sync_source != ''
+    AND software_archived_at IS NULL
+    GROUP BY software_sync_source
+    ORDER BY software_sync_source ASC
+");
 
 // Generate the HTML form content using output buffering.
 ob_start();
@@ -103,6 +119,50 @@ ob_start();
                 </div>
             </div>
         </div>
+
+        <?php if (mysqli_num_rows($sql_sync_sources) > 0): ?>
+        <div class="form-row">
+            <div class="form-group col-md">
+                <label>Vendor Sync Source <small class="text-muted">(optional &mdash; for one consolidated bill across all clients)</small></label>
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fa fa-fw fa-link"></i></span>
+                    </div>
+                    <select class="form-control select2" name="sync_source">
+                        <option value="">- None -</option>
+                        <?php while ($src = mysqli_fetch_assoc($sql_sync_sources)) {
+                            $src_name     = nullable_htmlentities($src['software_sync_source']);
+                            $client_count = intval($src['client_count']);
+                            $total_seats  = intval($src['total_seats']);
+                            $exempt_seats = intval($src['exempt_seats']);
+                            $billable     = $total_seats - $exempt_seats;
+                        ?>
+                            <option <?= $src_name === $recurring_expense_sync_source ? 'selected' : '' ?> value="<?= $src_name ?>">
+                                <?= $src_name ?> — <?= $billable ?> billable seat(s) across <?= $client_count ?> client(s)<?= $exempt_seats ? " ($exempt_seats exempt)" : '' ?>
+                            </option>
+                        <?php } ?>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group col-md">
+                <label>Unit Cost <small class="text-muted">(per seat)</small></label>
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fa fa-fw fa-dollar-sign"></i></span>
+                    </div>
+                    <input type="text" class="form-control" inputmode="decimal" pattern="-?[0-9]*\.?[0-9]{0,2}" name="unit_cost" value="<?= number_format($recurring_expense_unit_cost, 2, '.', '') ?>">
+                </div>
+            </div>
+        </div>
+        <?php if ($recurring_expense_sync_source): ?>
+            <div class="alert alert-secondary py-2">
+                <i class="fas fa-calculator mr-2"></i>Currently <strong><?= number_format($recurring_expense_quantity, 0) ?></strong> total billable seat(s) &times; <?= number_format($recurring_expense_unit_cost, 2) ?>/seat.
+                Amount is recalculated automatically each time seats sync.
+            </div>
+        <?php else: ?>
+            <small class="text-muted d-block mb-3">When set, the Amount above is recalculated automatically (total billable seats across every client &times; unit cost) each time seats sync.</small>
+        <?php endif; ?>
+        <?php endif; ?>
 
         <div class="form-row">
             <div class="form-group col-md">
@@ -225,7 +285,7 @@ ob_start();
             </div>
 
             <?php if (isset($_GET['client_id'])) { ?>
-                <input type="hidden" name="client" value="<?php echo $client_id; ?>">
+                <input type="hidden" name="client_id" value="<?php echo $recurring_expense_client_id; ?>">
             <?php } else { ?>
 
                 <div class="form-group col-md">
@@ -234,7 +294,7 @@ ob_start();
                         <div class="input-group-prepend">
                             <span class="input-group-text"><i class="fa fa-fw fa-user"></i></span>
                         </div>
-                        <select class="form-control select2" name="client">
+                        <select class="form-control select2" name="client_id">
                             <option value="">- Select Client -</option>
                             <?php
 

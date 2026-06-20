@@ -1678,6 +1678,41 @@ function syncRecurringInvoiceItemsBySoftwareId($software_id, $new_qty) {
     }
 }
 
+// Recalculates amount (total seats x unit cost) on any recurring expenses tied to a vendor sync source.
+// Aggregates seats across every non-exempt, non-archived software record for that source —
+// used for consolidated vendor bills (e.g. one Huntress invoice covering every client).
+function syncRecurringExpensesBySyncSource($sync_source) {
+    global $mysqli;
+
+    $sync_source = mysqli_real_escape_string($mysqli, $sync_source);
+
+    $total_row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT COALESCE(SUM(software_seats), 0) AS total_seats
+        FROM software
+        WHERE software_sync_source = '$sync_source'
+        AND software_billing_exempt = 0
+        AND software_archived_at IS NULL
+    "));
+    $total_seats = floatval($total_row['total_seats']);
+
+    $sql_expenses = mysqli_query($mysqli, "SELECT recurring_expense_id, recurring_expense_unit_cost
+        FROM recurring_expenses
+        WHERE recurring_expense_sync_source = '$sync_source'
+        AND recurring_expense_archived_at IS NULL
+    ");
+
+    while ($exp = mysqli_fetch_assoc($sql_expenses)) {
+        $recurring_expense_id = intval($exp['recurring_expense_id']);
+        $unit_cost = floatval($exp['recurring_expense_unit_cost']);
+        $new_amount = round($total_seats * $unit_cost, 2);
+
+        mysqli_query($mysqli, "UPDATE recurring_expenses SET
+            recurring_expense_quantity = $total_seats,
+            recurring_expense_amount = $new_amount
+            WHERE recurring_expense_id = $recurring_expense_id
+        ");
+    }
+}
+
 // Recursive function to display folder options - Used in folders files and documents
 function display_folder_options($parent_folder_id, $client_id, $indent = 0) {
     global $mysqli;
