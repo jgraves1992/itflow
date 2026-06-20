@@ -63,7 +63,7 @@ $balance = $invoice_amounts - $amount_paid;
             <a class="dropdown-item" href="//<?php echo $config_base_url ?>/guest/guest_pay_invoice_stripe.php?invoice_id=<?php echo "$invoice_id&url_key=$invoice_url_key"; ?>">Enter Card Manually</a>
             <?php
             if (mysqli_num_rows($sql_saved_payment_methods) > 0) { ?>
-                <h6 class="dropdown-header text-left">Pay with a Saved Card</h6>
+                <h6 class="dropdown-header text-left">Pay with a Saved Payment Method</h6>
             <?php
             while ($row = mysqli_fetch_assoc($sql_saved_payment_methods)) {
                 $saved_payment_id = intval($row['saved_payment_id']);
@@ -166,19 +166,22 @@ $balance = $invoice_amounts - $amount_paid;
                                 AND payment_provider_active = 1;
                             ");
                             if (mysqli_num_rows($sql_saved_payment_methods) > 0) { ?>
-                                <h6 class="dropdown-header text-left">Pay with a Saved Card</h6>
+                                <h6 class="dropdown-header text-left">Pay with a Saved Payment Method</h6>
                             <?php
                             while ($row = mysqli_fetch_assoc($sql_saved_payment_methods)) {
                                 $saved_payment_id = intval($row['saved_payment_id']);
                                 $saved_payment_description = nullable_htmlentities($row['saved_payment_description']);
                                 $payment_icon = "fas fa-credit-card"; // default icon
-                                if (strpos($saved_payment_description, "visa") !== false) {
+                                $description_lower = strtolower($saved_payment_description);
+                                if (strpos($description_lower, "ach") !== false) {
+                                    $payment_icon = "fas fa-university";
+                                } elseif (strpos($description_lower, "visa") !== false) {
                                     $payment_icon = "fab fa-cc-visa";
-                                } elseif (strpos($saved_payment_description, "mastercard") !== false) {
+                                } elseif (strpos($description_lower, "mastercard") !== false) {
                                     $payment_icon = "fab fa-cc-mastercard";
-                                } elseif (strpos($saved_payment_description, "american express") !== false || strpos($saved_payment_description, "amex") !== false) {
+                                } elseif (strpos($description_lower, "american express") !== false || strpos($description_lower, "amex") !== false) {
                                     $payment_icon = "fab fa-cc-amex";
-                                } elseif (strpos($saved_payment_description, "discover") !== false) {
+                                } elseif (strpos($description_lower, "discover") !== false) {
                                     $payment_icon = "fab fa-cc-discover";
                                 }
                                 $payment_provider_name = nullable_htmlentities($row['payment_provider_name']);
