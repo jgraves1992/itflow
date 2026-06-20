@@ -76,6 +76,12 @@ if (isset($_GET['stripe_create_pi'])) {
     try {
         \Stripe\Stripe::setApiKey($stripe_secret_key);
 
+        // ACH (us_bank_account) is only valid for USD — Stripe rejects it for any other currency
+        $payment_method_types = ['card'];
+        if (strtoupper($invoice_currency_code) === 'USD') {
+            $payment_method_types[] = 'us_bank_account';
+        }
+
         $paymentIntent = \Stripe\PaymentIntent::create([
             'amount' => intval($balance_to_pay * 100), // Stripe expects cents
             'currency' => $invoice_currency_code,
@@ -86,7 +92,7 @@ if (isset($_GET['stripe_create_pi'])) {
                 'itflow_invoice_number' => $invoice_prefix . $invoice_number,
                 'itflow_invoice_id' => $invoice_id,
             ],
-            'payment_method_types' => ['card'],
+            'payment_method_types' => $payment_method_types,
         ]);
 
         $output = [
