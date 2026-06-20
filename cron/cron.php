@@ -909,7 +909,17 @@ while ($row = mysqli_fetch_assoc($sql_recurring_invoices)) {
     //Generate a unique URL key for clients to access
     $url_key = randomString(32);
 
-    mysqli_query($mysqli, "INSERT INTO invoices SET invoice_prefix = '$config_invoice_prefix', invoice_number = $new_invoice_number, invoice_scope = '$recurring_invoice_scope', invoice_date = CURDATE(), invoice_due = DATE_ADD(CURDATE(), INTERVAL $client_net_terms day), invoice_discount_amount = $recurring_invoice_discount_amount, invoice_amount = $recurring_invoice_amount, invoice_currency_code = '$recurring_invoice_currency_code', invoice_note = '$recurring_invoice_note', invoice_category_id = $category_id, invoice_status = 'Sent', invoice_url_key = '$url_key', invoice_recurring_invoice_id = $recurring_invoice_id, invoice_client_id = $client_id");
+    // Due date = today + client's net terms, capped to the 5th of the generation month
+    // (skip the cap if the 5th has already passed this month, to avoid a due date before the invoice date)
+    $today = date('Y-m-d');
+    $invoice_due = date('Y-m-d', strtotime("$today +$client_net_terms days"));
+    $fifth_of_month = date('Y-m-05', strtotime($today));
+
+    if (strtotime($invoice_due) > strtotime($fifth_of_month) && strtotime($fifth_of_month) >= strtotime($today)) {
+        $invoice_due = $fifth_of_month;
+    }
+
+    mysqli_query($mysqli, "INSERT INTO invoices SET invoice_prefix = '$config_invoice_prefix', invoice_number = $new_invoice_number, invoice_scope = '$recurring_invoice_scope', invoice_date = CURDATE(), invoice_due = '$invoice_due', invoice_discount_amount = $recurring_invoice_discount_amount, invoice_amount = $recurring_invoice_amount, invoice_currency_code = '$recurring_invoice_currency_code', invoice_note = '$recurring_invoice_note', invoice_category_id = $category_id, invoice_status = 'Sent', invoice_url_key = '$url_key', invoice_recurring_invoice_id = $recurring_invoice_id, invoice_client_id = $client_id");
 
     $new_invoice_id = mysqli_insert_id($mysqli);
 
