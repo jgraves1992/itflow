@@ -350,6 +350,7 @@ ob_start();
                             <option value="Huntress SAT"  <?= $software_sync_source === 'Huntress SAT'  ? 'selected' : '' ?>>Huntress SAT (Learners)</option>
                             <option value="Huntress ITDR" <?= $software_sync_source === 'Huntress ITDR' ? 'selected' : '' ?>>Huntress ITDR (Identities)</option>
                             <option value="Level.io"      <?= $software_sync_source === 'Level.io'      ? 'selected' : '' ?>>Level.io (Devices)</option>
+                            <option value="Sherweb"       <?= $software_sync_source === 'Sherweb'       ? 'selected' : '' ?>>Sherweb (Subscription seats)</option>
                         </select>
                     </div>
                 </div>
@@ -361,11 +362,12 @@ ob_start();
                             <span class="input-group-text"><i class="fa fa-fw fa-hashtag"></i></span>
                         </div>
                         <input type="text" class="form-control" name="sync_external_id"
-                            placeholder="e.g. 12345 or Z2lkOi8v..." value="<?= $software_sync_external_id ?>">
+                            placeholder="e.g. 12345, Z2lkOi8v..., or customerId:subscriptionId" value="<?= $software_sync_external_id ?>">
                     </div>
                     <small class="text-muted">
                         <strong>Huntress</strong>: Organization ID (Account &rarr; Organizations) — same ID for MDR, SAT &amp; ITDR.<br>
-                        <strong>Level.io</strong>: Group ID for this client (the base64 string from the URL).
+                        <strong>Level.io</strong>: Group ID for this client (the base64 string from the URL).<br>
+                        <strong>Sherweb</strong>: <code>customerId:subscriptionId</code> — find both via GetCustomers and GetCustomerSubscriptions in the Sherweb API. One software record per subscription line.
                     </small>
                 </div>
 

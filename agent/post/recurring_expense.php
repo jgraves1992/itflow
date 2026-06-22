@@ -26,8 +26,9 @@ if (isset($_POST['create_recurring_expense'])) {
     $unit_cost = floatval(str_replace(',', '', $_POST['unit_cost'] ?? 0));
     $quantity = 1;
 
-    // When tied to a vendor sync source, quantity is the total billable seats across every client
-    if ($sync_source) {
+    // Sherweb's amount comes directly from the distributor's billed charges, not seats x unit_cost —
+    // leave it as typed for now; the next cron run corrects it from the real API total.
+    if ($sync_source && $sync_source !== 'Sherweb') {
         $seats_row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT COALESCE(SUM(software_seats), 0) AS total_seats
             FROM software
             WHERE software_sync_source = '$sync_source'
@@ -76,8 +77,9 @@ if (isset($_POST['edit_recurring_expense'])) {
     $unit_cost = floatval(str_replace(',', '', $_POST['unit_cost'] ?? 0));
     $quantity = 1;
 
-    // When tied to a vendor sync source, quantity is the total billable seats across every client
-    if ($sync_source) {
+    // Sherweb's amount comes directly from the distributor's billed charges, not seats x unit_cost —
+    // leave it as typed for now; the next cron run corrects it from the real API total.
+    if ($sync_source && $sync_source !== 'Sherweb') {
         $seats_row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT COALESCE(SUM(software_seats), 0) AS total_seats
             FROM software
             WHERE software_sync_source = '$sync_source'

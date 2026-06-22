@@ -33,3 +33,22 @@ if (isset($_POST['save_settings_levelio'])) {
     flash_alert("Level.io integration settings saved");
     redirect("/admin/settings_integrations.php");
 }
+
+if (isset($_POST['save_settings_sherweb'])) {
+
+    validateCSRFToken($_POST['csrf_token']);
+
+    $sherweb_client_id        = sanitizeInput($_POST['config_sherweb_client_id']);
+    $sherweb_client_secret    = sanitizeInput($_POST['config_sherweb_client_secret']);
+    $sherweb_subscription_key = sanitizeInput($_POST['config_sherweb_subscription_key']);
+
+    mysqli_query($mysqli, "UPDATE settings SET
+        config_sherweb_client_id        = '$sherweb_client_id',
+        config_sherweb_client_secret    = '$sherweb_client_secret',
+        config_sherweb_subscription_key = '$sherweb_subscription_key'
+        WHERE company_id = 1");
+
+    logAction("Settings", "Update", "$session_name updated Sherweb integration settings");
+    flash_alert("Sherweb integration settings saved");
+    redirect("/admin/settings_integrations.php");
+}

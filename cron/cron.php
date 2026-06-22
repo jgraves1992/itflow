@@ -863,6 +863,155 @@ if ($levelio_api_key) {
     syncRecurringExpensesBySyncSource('Level.io');
 }
 
+// SHERWEB — sync per-subscription seat counts, and roll up receivable charges into a consolidated expense
+$sherweb_settings = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT config_sherweb_client_id, config_sherweb_client_secret, config_sherweb_subscription_key FROM settings WHERE company_id = 1"));
+$sherweb_client_id        = trim($sherweb_settings['config_sherweb_client_id'] ?? '');
+$sherweb_client_secret    = trim($sherweb_settings['config_sherweb_client_secret'] ?? '');
+$sherweb_subscription_key = trim($sherweb_settings['config_sherweb_subscription_key'] ?? '');
+
+if ($sherweb_client_id && $sherweb_client_secret && $sherweb_subscription_key) {
+
+    // OAuth client-credentials token — lasts ~1hr, simplest to fetch fresh each cron run
+    $sherweb_token_body = http_build_query([
+        'grant_type'    => 'client_credentials',
+        'client_id'     => $sherweb_client_id,
+        'client_secret' => $sherweb_client_secret,
+        'scope'         => 'service-provider',
+    ]);
+
+    $sherweb_token_ctx = stream_context_create(['http' => [
+        'method'        => 'POST',
+        'header'        => "Content-Type: application/x-www-form-urlencoded\r\nAccept: application/json\r\n",
+        'content'       => $sherweb_token_body,
+        'timeout'       => 15,
+        'ignore_errors' => true,
+    ]]);
+
+    $sherweb_token_result = @file_get_contents('https://api.sherweb.com/auth/oidc/connect/token', false, $sherweb_token_ctx);
+    $sherweb_token_data   = $sherweb_token_result ? json_decode($sherweb_token_result, true) : null;
+    $sherweb_access_token = $sherweb_token_data['access_token'] ?? '';
+
+    if (!$sherweb_access_token) {
+        logApp("Sherweb Sync", "error", "Failed to obtain OAuth access token");
+    } else {
+
+        $sherweb_headers = "Authorization: Bearer $sherweb_access_token\r\nOcp-Apim-Subscription-Key: $sherweb_subscription_key\r\nAccept: application/json\r\n";
+
+        // External ID format is "customerId:subscriptionId" — one software record per subscription line
+        $sql_sherweb_sw = mysqli_query($mysqli, "
+            SELECT software_id, software_name, software_sync_external_id
+            FROM software
+            WHERE software_sync_source = 'Sherweb'
+            AND software_sync_external_id IS NOT NULL
+            AND software_sync_external_id != ''
+            AND software_archived_at IS NULL
+        ");
+
+        $sherweb_customer_map = []; // customerId => [['software_id', 'software_name', 'subscription_id'], ...]
+        while ($sw = mysqli_fetch_assoc($sql_sherweb_sw)) {
+            $parts = explode(':', $sw['software_sync_external_id'], 2);
+
+            if (count($parts) !== 2) {
+                logApp("Sherweb Sync", "error", "Invalid External ID format for software_id {$sw['software_id']} (expected customerId:subscriptionId)");
+                continue;
+            }
+
+            [$sherweb_customer_id, $sherweb_subscription_id] = $parts;
+
+            $sherweb_customer_map[$sherweb_customer_id][] = [
+                'software_id'     => intval($sw['software_id']),
+                'software_name'   => sanitizeInput($sw['software_name']),
+                'subscription_id' => $sherweb_subscription_id,
+            ];
+        }
+
+        $sherweb_total_charge = 0;
+        $sherweb_total_seats  = 0;
+
+        // One pair of API calls per unique customer, regardless of how many subscriptions are tracked for them
+        foreach ($sherweb_customer_map as $sherweb_customer_id => $sw_list) {
+            $customer_id_enc = urlencode($sherweb_customer_id);
+
+            // Seats — update every software record tracking a subscription for this customer
+            $sub_ctx = stream_context_create(['http' => [
+                'method'        => 'GET',
+                'header'        => $sherweb_headers,
+                'timeout'       => 15,
+                'ignore_errors' => true,
+            ]]);
+
+            $sub_result = @file_get_contents("https://api.sherweb.com/service-provider/v1/billing/subscriptions?customerId=$customer_id_enc", false, $sub_ctx);
+
+            if ($sub_result === false) {
+                logApp("Sherweb Sync", "error", "Subscriptions request failed for customer $sherweb_customer_id");
+            } else {
+                $subscriptions = json_decode($sub_result, true)['items'] ?? [];
+
+                foreach ($sw_list as $sw) {
+                    $matched = null;
+                    foreach ($subscriptions as $sub) {
+                        if (($sub['id'] ?? '') === $sw['subscription_id']) {
+                            $matched = $sub;
+                            break;
+                        }
+                    }
+
+                    if (!$matched) {
+                        logApp("Sherweb Sync", "error", "Subscription {$sw['subscription_id']} not found for customer $sherweb_customer_id (software_id {$sw['software_id']})");
+                        continue;
+                    }
+
+                    $seat_count = intval($matched['quantity'] ?? 0);
+
+                    mysqli_query($mysqli, "UPDATE software SET software_seats = $seat_count, software_sync_last_at = NOW() WHERE software_id = {$sw['software_id']}");
+
+                    syncRecurringInvoiceItemsBySoftwareId($sw['software_id'], $seat_count);
+
+                    $sherweb_total_seats += $seat_count;
+
+                    logApp("Sherweb Sync", "info", "Updated '{$sw['software_name']}' (id: {$sw['software_id']}) to $seat_count seats from Sherweb subscription {$sw['subscription_id']}");
+                }
+            }
+
+            // Cost — sum this customer's charges for the period into the running grand total
+            $charges_ctx = stream_context_create(['http' => [
+                'method'        => 'GET',
+                'header'        => $sherweb_headers,
+                'timeout'       => 15,
+                'ignore_errors' => true,
+            ]]);
+
+            $charges_result = @file_get_contents("https://api.sherweb.com/service-provider/v1/billing/receivable-charges?customerId=$customer_id_enc", false, $charges_ctx);
+
+            if ($charges_result === false) {
+                logApp("Sherweb Sync", "error", "Receivable charges request failed for customer $sherweb_customer_id");
+                continue;
+            }
+
+            $charges = json_decode($charges_result, true)['charges'] ?? [];
+
+            foreach ($charges as $charge) {
+                $sherweb_total_charge += floatval($charge['costPriceProrated'] ?? $charge['costPrice'] ?? 0);
+            }
+        }
+
+        // Roll the consolidated total directly into any recurring expense tracking Sherweb —
+        // unlike Huntress/Level.io this is the real distributor bill, not a seats x unit_cost estimate
+        if (!empty($sherweb_customer_map)) {
+            $sherweb_total_charge_rounded = round($sherweb_total_charge, 2);
+
+            mysqli_query($mysqli, "UPDATE recurring_expenses SET
+                recurring_expense_amount = $sherweb_total_charge_rounded,
+                recurring_expense_quantity = $sherweb_total_seats
+                WHERE recurring_expense_sync_source = 'Sherweb'
+                AND recurring_expense_archived_at IS NULL
+            ");
+
+            logApp("Sherweb Sync", "info", "Consolidated Sherweb bill updated to $sherweb_total_charge_rounded across " . count($sherweb_customer_map) . " customer(s), $sherweb_total_seats total seats");
+        }
+    }
+}
+
 // Send Recurring Invoices that match todays date and are active
 
 //Loop through all recurring that match today's date and is active

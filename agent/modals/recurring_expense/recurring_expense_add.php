@@ -127,7 +127,7 @@ ob_start();
                 </div>
             </div>
         </div>
-        <small class="text-muted d-block mb-3">When set, the Amount above is recalculated automatically (total billable seats across every client &times; unit cost) each time seats sync. Mark a license "billing exempt" on the software record to exclude free/partner seats from the total.</small>
+        <small class="text-muted d-block mb-3">When set, the Amount above is recalculated automatically each time seats sync — Huntress &amp; Level.io use total billable seats &times; Unit Cost; Sherweb pulls the actual billed amount directly from the distributor (Unit Cost is ignored). Mark a license "billing exempt" on the software record to exclude free/partner seats from seat-based totals.</small>
         <?php endif; ?>
 
         <div class="form-row">

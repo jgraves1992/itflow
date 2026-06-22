@@ -160,7 +160,7 @@ ob_start();
                 Amount is recalculated automatically each time seats sync.
             </div>
         <?php else: ?>
-            <small class="text-muted d-block mb-3">When set, the Amount above is recalculated automatically (total billable seats across every client &times; unit cost) each time seats sync.</small>
+            <small class="text-muted d-block mb-3">When set, the Amount above is recalculated automatically each time seats sync — Huntress &amp; Level.io use total billable seats &times; Unit Cost; Sherweb pulls the actual billed amount directly from the distributor (Unit Cost is ignored).</small>
         <?php endif; ?>
         <?php endif; ?>
 
