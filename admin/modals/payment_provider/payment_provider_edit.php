@@ -16,6 +16,8 @@ $vendor_id = intval($row['payment_provider_expense_vendor']);
 $category_id = intval($row['payment_provider_expense_category']);
 $percent_fee = floatval($row['payment_provider_expense_percentage_fee']) * 100;
 $flat_fee = floatval($row['payment_provider_expense_flat_fee']);
+$percent_fee_ach = floatval($row['payment_provider_expense_percentage_fee_ach']) * 100;
+$flat_fee_ach = floatval($row['payment_provider_expense_flat_fee_ach']);
 
 // Generate the HTML form content using output buffering.
 ob_start();
@@ -163,7 +165,7 @@ ob_start();
                 </div>
 
                 <div class="form-group">
-                    <label>Percentage Fee to expense</label>
+                    <label>Percentage Fee to expense <small class="text-muted">(Card)</small></label>
                     <div class="input-group">
                         <div class="input-group-prepend">
                             <span class="input-group-text"><i class="fa fa-fw fa-percent"></i></span>
@@ -174,7 +176,7 @@ ob_start();
                 </div>
 
                 <div class="form-group">
-                    <label>Flat Fee to expense</label>
+                    <label>Flat Fee to expense <small class="text-muted">(Card)</small></label>
                     <div class="input-group">
                         <div class="input-group-prepend">
                             <span class="input-group-text"><i class="fa fa-fw fa-shopping-cart"></i></span>
@@ -182,6 +184,29 @@ ob_start();
                         <input type="text" class="form-control" inputmode="decimal" pattern="[0-9]*\.?[0-9]{0,3}" name="flat_fee" value="<?php echo $flat_fee; ?>" placeholder="0.030">
                     </div>
                     <small class="form-text text-muted">See <a href="https://stripe.com/pricing" target="_blank">here <i class="fas fa-fw fa-external-link-alt"></i></a> for the latest Stripe Fees.</small>
+                </div>
+
+                <hr>
+
+                <div class="form-group">
+                    <label>Percentage Fee to expense <small class="text-muted">(ACH / Bank Transfer)</small></label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fa fa-fw fa-percent"></i></span>
+                        </div>
+                        <input type="text" class="form-control" inputmode="decimal" pattern="[0-9]*\.?[0-9]{0,2}" name="percentage_fee_ach" value="<?php echo $percent_fee_ach; ?>" placeholder="Enter Percentage">
+                    </div>
+                    <small class="form-text text-muted">Stripe ACH Direct Debit is typically 0.8%, capped at $5. See <a href="https://stripe.com/pricing" target="_blank">here <i class="fas fa-fw fa-external-link-alt"></i></a>.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Flat Fee to expense <small class="text-muted">(ACH / Bank Transfer)</small></label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fa fa-fw fa-shopping-cart"></i></span>
+                        </div>
+                        <input type="text" class="form-control" inputmode="decimal" pattern="[0-9]*\.?[0-9]{0,3}" name="flat_fee_ach" value="<?php echo $flat_fee_ach; ?>" placeholder="0.00">
+                    </div>
                 </div>
             </div>
         </div>

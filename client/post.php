@@ -552,6 +552,8 @@ if (isset($_GET['add_payment_by_provider'])) {
     $expense_vendor_id = intval($row['payment_provider_expense_vendor']);
     $expense_percentage_fee = floatval($row['payment_provider_expense_percentage_fee']);
     $expense_flat_fee = floatval($row['payment_provider_expense_flat_fee']);
+    $expense_percentage_fee_ach = floatval($row['payment_provider_expense_percentage_fee_ach']);
+    $expense_flat_fee_ach = floatval($row['payment_provider_expense_flat_fee_ach']);
     $payment_provider_client = sanitizeInput($row['payment_provider_client']);
     $saved_payment_method = sanitizeInput($row['saved_payment_provider_method']);
     $saved_payment_description = sanitizeInput($row['saved_payment_description']);
@@ -604,7 +606,11 @@ if (isset($_GET['add_payment_by_provider'])) {
         // Get details from PI
         $pi_id = sanitizeInput($payment_intent->id);
         $pi_date = date('Y-m-d', $payment_intent->created);
-        $pi_amount_paid = floatval(($payment_intent->amount_received / 100));
+        // ACH returns status "processing" with amount_received = 0 until funds settle
+        $pi_is_ach = ($payment_intent->status === 'processing');
+        $pi_amount_paid = $pi_is_ach
+            ? floatval($payment_intent->amount / 100)
+            : floatval($payment_intent->amount_received / 100);
         $pi_currency = strtoupper(sanitizeInput($payment_intent->currency));
         $pi_livemode = $payment_intent->livemode;
 
@@ -614,13 +620,14 @@ if (isset($_GET['add_payment_by_provider'])) {
         logApp("Stripe", "error", "Exception during PI for invoice ID $invoice_id: $error");
     }
 
-    if ($payment_intent->status == "succeeded" && intval($balance_to_pay) == intval($pi_amount_paid)) {
+    if (in_array($payment_intent->status, ['succeeded', 'processing']) && intval($balance_to_pay) == intval($pi_amount_paid)) {
 
         // Update Invoice Status
         mysqli_query($mysqli, "UPDATE invoices SET invoice_status = 'Paid' WHERE invoice_id = $invoice_id");
 
         // Add Payment to History
-        mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $account_id, payment_method = 'Stripe', payment_reference = 'Stripe - $pi_id', payment_invoice_id = $invoice_id");
+        $payment_method_label = $pi_is_ach ? 'Stripe ACH (Pending)' : 'Stripe';
+        mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $account_id, payment_method = '$payment_method_label', payment_reference = 'Stripe - $pi_id', payment_invoice_id = $invoice_id");
         mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Paid', history_description = 'Online Payment added (agent)', history_invoice_id = $invoice_id");
 
         // Email receipt
@@ -668,10 +675,15 @@ if (isset($_GET['add_payment_by_provider'])) {
         if (!$pi_livemode) {
             $extended_log_desc = '(DEV MODE)';
         }
+        if ($pi_is_ach) {
+            $extended_log_desc .= ' (ACH - Pending Settlement)';
+        }
 
-        // Create Stripe payment gateway fee as an expense (if configured)
+        // Create Stripe payment gateway fee as an expense (if configured) — ACH and card have different fee structures
         if ($expense_vendor_id > 0 && $expense_category_id > 0) {
-            $gateway_fee = round($invoice_amount * $expense_percentage_fee + $expense_flat_fee, 2);
+            $fee_percentage = $pi_is_ach ? $expense_percentage_fee_ach : $expense_percentage_fee;
+            $fee_flat       = $pi_is_ach ? $expense_flat_fee_ach : $expense_flat_fee;
+            $gateway_fee = round($invoice_amount * $fee_percentage + $fee_flat, 2);
             mysqli_query($mysqli,"INSERT INTO expenses SET expense_date = '$pi_date', expense_amount = $gateway_fee, expense_currency_code = '$invoice_currency_code', expense_account_id = $account_id, expense_vendor_id = $expense_vendor_id, expense_client_id = $client_id, expense_category_id = $expense_category_id, expense_description = 'Stripe Transaction for Invoice $invoice_prefix$invoice_number In the Amount of $balance_to_pay', expense_reference = 'Stripe - $pi_id $extended_log_desc'");
         }
 

@@ -15,6 +15,8 @@ $stripe_expense_vendor   = intval($stripe_provider['payment_provider_expense_ven
 $stripe_expense_category = intval($stripe_provider['payment_provider_expense_category']);
 $stripe_percentage_fee   = floatval($stripe_provider['payment_provider_expense_percentage_fee']);
 $stripe_flat_fee         = floatval($stripe_provider['payment_provider_expense_flat_fee']);
+$stripe_percentage_fee_ach = floatval($stripe_provider['payment_provider_expense_percentage_fee_ach']);
+$stripe_flat_fee_ach       = floatval($stripe_provider['payment_provider_expense_flat_fee_ach']);
 
 
 // Show payment form
@@ -230,9 +232,11 @@ if (isset($_GET['invoice_id'], $_GET['url_key']) && !isset($_GET['payment_intent
     $amount_paid_previously = floatval(mysqli_fetch_assoc($sql_amount_paid_previously)['amount_paid']);
     $balance_to_pay = $invoice_amount - $amount_paid_previously;
 
-    // Stripe expense
+    // Stripe expense — ACH and card have different fee structures
     if ($stripe_expense_vendor > 0 && $stripe_expense_category > 0) {
-        $gateway_fee = round($balance_to_pay * $stripe_percentage_fee + $stripe_flat_fee, 2);
+        $fee_percentage = $pi_is_ach ? $stripe_percentage_fee_ach : $stripe_percentage_fee;
+        $fee_flat       = $pi_is_ach ? $stripe_flat_fee_ach : $stripe_flat_fee;
+        $gateway_fee = round($balance_to_pay * $fee_percentage + $fee_flat, 2);
         mysqli_query($mysqli, "INSERT INTO expenses SET expense_date = '$pi_date', expense_amount = $gateway_fee, expense_currency_code = '$invoice_currency_code', expense_account_id = $stripe_account, expense_vendor_id = $stripe_expense_vendor, expense_client_id = $client_id, expense_category_id = $stripe_expense_category, expense_description = 'Stripe Transaction for Invoice $invoice_prefix$invoice_number In the Amount of $balance_to_pay', expense_reference = 'Stripe - $pi_id'");
     }
 

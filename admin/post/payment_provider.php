@@ -19,6 +19,8 @@ if (isset($_POST['add_payment_provider'])) {
     $expense_category = intval($_POST['expense_category']) ?? 0;
     $percentage_fee = floatval($_POST['percentage_fee']) / 100 ?? 0;
     $flat_fee = floatval($_POST['flat_fee']) ?? 0;
+    $percentage_fee_ach = floatval($_POST['percentage_fee_ach']) / 100 ?? 0;
+    $flat_fee_ach = floatval($_POST['flat_fee_ach']) ?? 0;
 
     // Check to ensure provider isn't added twice
     $sql = mysqli_query($mysqli, "SELECT 1 FROM payment_providers WHERE payment_provider_name = '$provider' LIMIT 1");
@@ -27,7 +29,7 @@ if (isset($_POST['add_payment_provider'])) {
         redirect();
     }
 
-    mysqli_query($mysqli,"INSERT INTO payment_providers SET payment_provider_name = '$provider', payment_provider_public_key = '$public_key', payment_provider_private_key = '$private_key', payment_provider_threshold = $threshold, payment_provider_account = $account, payment_provider_expense_vendor = $expense_vendor, payment_provider_expense_category = $expense_category, payment_provider_expense_percentage_fee = $percentage_fee, payment_provider_expense_flat_fee = $flat_fee");
+    mysqli_query($mysqli,"INSERT INTO payment_providers SET payment_provider_name = '$provider', payment_provider_public_key = '$public_key', payment_provider_private_key = '$private_key', payment_provider_threshold = $threshold, payment_provider_account = $account, payment_provider_expense_vendor = $expense_vendor, payment_provider_expense_category = $expense_category, payment_provider_expense_percentage_fee = $percentage_fee, payment_provider_expense_flat_fee = $flat_fee, payment_provider_expense_percentage_fee_ach = $percentage_fee_ach, payment_provider_expense_flat_fee_ach = $flat_fee_ach");
 
     $provider_id = mysqli_insert_id($mysqli);
 
@@ -53,8 +55,10 @@ if (isset($_POST['edit_payment_provider'])) {
     $expense_category = intval($_POST['expense_category']) ?? 0;
     $percentage_fee = floatval($_POST['percentage_fee']) / 100;
     $flat_fee = floatval($_POST['flat_fee']);
+    $percentage_fee_ach = floatval($_POST['percentage_fee_ach']) / 100;
+    $flat_fee_ach = floatval($_POST['flat_fee_ach']);
 
-    mysqli_query($mysqli,"UPDATE payment_providers SET payment_provider_public_key = '$public_key', payment_provider_private_key = '$private_key', payment_provider_threshold = $threshold, payment_provider_account = $account, payment_provider_expense_vendor = $expense_vendor, payment_provider_expense_category = $expense_category, payment_provider_expense_percentage_fee = $percentage_fee, payment_provider_expense_flat_fee = $flat_fee WHERE payment_provider_id = $provider_id");
+    mysqli_query($mysqli,"UPDATE payment_providers SET payment_provider_public_key = '$public_key', payment_provider_private_key = '$private_key', payment_provider_threshold = $threshold, payment_provider_account = $account, payment_provider_expense_vendor = $expense_vendor, payment_provider_expense_category = $expense_category, payment_provider_expense_percentage_fee = $percentage_fee, payment_provider_expense_flat_fee = $flat_fee, payment_provider_expense_percentage_fee_ach = $percentage_fee_ach, payment_provider_expense_flat_fee_ach = $flat_fee_ach WHERE payment_provider_id = $provider_id");
 
     logAction("Payment Provider", "Edit", "$session_name edited Payment Provider $provider");
 
