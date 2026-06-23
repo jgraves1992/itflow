@@ -18,12 +18,12 @@ if (!$step_id || !$step_subject || !$step_body) {
     exit;
 }
 
-$subj = mysqli_real_escape_string($mysqli, $step_subject);
+// $step_subject already escaped by sanitizeInput() — only $step_body needs it (it skips sanitizeInput to preserve TinyMCE HTML)
 $body = mysqli_real_escape_string($mysqli, $step_body);
 
 mysqli_query($mysqli,
     "UPDATE marketing_sequence_steps
-     SET step_subject='$subj', step_body='$body', step_delay_days=$step_delay
+     SET step_subject='$step_subject', step_body='$body', step_delay_days=$step_delay
      WHERE step_id=$step_id AND step_sequence_id=$sequence_id");
 
 flash_alert('Step updated.');

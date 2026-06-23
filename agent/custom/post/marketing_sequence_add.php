@@ -24,14 +24,10 @@ if ($from_email && !filter_var($from_email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-$n  = mysqli_real_escape_string($mysqli, $sequence_name);
-$d  = mysqli_real_escape_string($mysqli, $sequence_desc);
-$fn = mysqli_real_escape_string($mysqli, $from_name);
-$fe = mysqli_real_escape_string($mysqli, $from_email);
-
+// sanitizeInput() already escapes for SQL — do not re-escape, or quotes/backslashes get double-escaped into the stored value
 mysqli_query($mysqli,
     "INSERT INTO marketing_sequences (sequence_name, sequence_description, sequence_from_name, sequence_from_email, sequence_send_time)
-     VALUES ('$n', '$d', '$fn', '$fe', '$send_time')");
+     VALUES ('$sequence_name', '$sequence_desc', '$from_name', '$from_email', '$send_time')");
 
 $new_id = mysqli_insert_id($mysqli);
 

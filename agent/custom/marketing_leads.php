@@ -9,14 +9,13 @@ $search        = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
 
 $where = "WHERE lead_archived_at IS NULL";
 
+// sanitizeInput() already escapes for SQL — do not re-escape, or quotes/backslashes break the match
 if ($status_filter) {
-    $s = mysqli_real_escape_string($mysqli, $status_filter);
-    $where .= " AND lead_status = '$s'";
+    $where .= " AND lead_status = '$status_filter'";
 }
 
 if ($search) {
-    $q = mysqli_real_escape_string($mysqli, $search);
-    $where .= " AND (lead_name LIKE '%$q%' OR lead_email LIKE '%$q%' OR lead_company LIKE '%$q%')";
+    $where .= " AND (lead_name LIKE '%$search%' OR lead_email LIKE '%$search%' OR lead_company LIKE '%$search%')";
 }
 
 $records_per_page = 25;

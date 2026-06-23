@@ -7,9 +7,9 @@ enforceUserPermission('module_client');
 $search = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
 $where  = "WHERE sequence_archived_at IS NULL";
 
+// sanitizeInput() already escapes for SQL — do not re-escape, or quotes/backslashes break the match
 if ($search) {
-    $q = mysqli_real_escape_string($mysqli, $search);
-    $where .= " AND (sequence_name LIKE '%$q%' OR sequence_description LIKE '%$q%')";
+    $where .= " AND (sequence_name LIKE '%$search%' OR sequence_description LIKE '%$search%')";
 }
 
 $sql = mysqli_query($mysqli,

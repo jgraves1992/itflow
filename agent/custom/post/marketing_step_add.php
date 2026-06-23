@@ -22,12 +22,12 @@ $order_result = mysqli_fetch_assoc(mysqli_query($mysqli,
     "SELECT COALESCE(MAX(step_order), 0) + 1 AS next_order FROM marketing_sequence_steps WHERE step_sequence_id = $sequence_id"));
 $step_order = intval($order_result['next_order']);
 
-$subj = mysqli_real_escape_string($mysqli, $step_subject);
+// $step_subject already escaped by sanitizeInput() — only $step_body needs it (it skips sanitizeInput to preserve TinyMCE HTML)
 $body = mysqli_real_escape_string($mysqli, $step_body);
 
 mysqli_query($mysqli,
     "INSERT INTO marketing_sequence_steps (step_sequence_id, step_order, step_delay_days, step_subject, step_body)
-     VALUES ($sequence_id, $step_order, $step_delay, '$subj', '$body')");
+     VALUES ($sequence_id, $step_order, $step_delay, '$step_subject', '$body')");
 
 flash_alert("Step $step_order added.");
 header("Location: /agent/custom/marketing_sequence_details.php?id=$sequence_id");

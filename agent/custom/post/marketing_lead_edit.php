@@ -29,18 +29,11 @@ $lead_phone   = sanitizeInput($_POST['lead_phone'] ?? '');
 $lead_source  = sanitizeInput($_POST['lead_source'] ?? '');
 $lead_notes   = sanitizeInput($_POST['lead_notes'] ?? '');
 
-$n  = mysqli_real_escape_string($mysqli, $lead_name);
-$e  = mysqli_real_escape_string($mysqli, $lead_email);
-$c  = mysqli_real_escape_string($mysqli, $lead_company);
-$p  = mysqli_real_escape_string($mysqli, $lead_phone);
-$so = mysqli_real_escape_string($mysqli, $lead_source);
-$no = mysqli_real_escape_string($mysqli, $lead_notes);
-$st = mysqli_real_escape_string($mysqli, $lead_status);
-
+// sanitizeInput() already escapes for SQL — do not re-escape, or quotes/backslashes get double-escaped into the stored value
 mysqli_query($mysqli,
     "UPDATE marketing_leads
-     SET lead_name='$n', lead_email='$e', lead_company='$c', lead_phone='$p',
-         lead_source='$so', lead_notes='$no', lead_status='$st'
+     SET lead_name='$lead_name', lead_email='$lead_email', lead_company='$lead_company', lead_phone='$lead_phone',
+         lead_source='$lead_source', lead_notes='$lead_notes', lead_status='$lead_status'
      WHERE lead_id=$lead_id");
 
 flash_alert('Lead updated.');

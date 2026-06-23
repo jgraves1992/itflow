@@ -26,15 +26,11 @@ if ($from_email && !filter_var($from_email, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-$n  = mysqli_real_escape_string($mysqli, $sequence_name);
-$d  = mysqli_real_escape_string($mysqli, $sequence_desc);
-$fn = mysqli_real_escape_string($mysqli, $from_name);
-$fe = mysqli_real_escape_string($mysqli, $from_email);
-
+// sanitizeInput() already escapes for SQL — do not re-escape, or quotes/backslashes get double-escaped into the stored value
 mysqli_query($mysqli,
     "UPDATE marketing_sequences
-     SET sequence_name='$n', sequence_description='$d',
-         sequence_from_name='$fn', sequence_from_email='$fe',
+     SET sequence_name='$sequence_name', sequence_description='$sequence_desc',
+         sequence_from_name='$from_name', sequence_from_email='$from_email',
          sequence_active=$active, sequence_send_time='$send_time'
      WHERE sequence_id=$sequence_id");
 

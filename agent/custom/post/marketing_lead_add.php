@@ -29,7 +29,7 @@ if (!filter_var($lead_email, FILTER_VALIDATE_EMAIL)) {
 }
 
 $existing = mysqli_fetch_assoc(mysqli_query($mysqli,
-    "SELECT lead_id FROM marketing_leads WHERE lead_email = '" . mysqli_real_escape_string($mysqli, $lead_email) . "' AND lead_archived_at IS NULL"));
+    "SELECT lead_id FROM marketing_leads WHERE lead_email = '$lead_email' AND lead_archived_at IS NULL"));
 
 if ($existing) {
     flash_alert('A lead with that email already exists.', 'error');
@@ -37,21 +37,13 @@ if ($existing) {
     exit;
 }
 
-$token = bin2hex(random_bytes(32));
-
-$n  = mysqli_real_escape_string($mysqli, $lead_name);
-$e  = mysqli_real_escape_string($mysqli, $lead_email);
-$c  = mysqli_real_escape_string($mysqli, $lead_company);
-$p  = mysqli_real_escape_string($mysqli, $lead_phone);
-$so = mysqli_real_escape_string($mysqli, $lead_source);
-$no = mysqli_real_escape_string($mysqli, $lead_notes);
-$st = mysqli_real_escape_string($mysqli, $lead_status);
-$tk = mysqli_real_escape_string($mysqli, $token);
+// sanitizeInput() already escapes for SQL — do not re-escape, or quotes/backslashes get double-escaped into the stored value
+$token = mysqli_real_escape_string($mysqli, bin2hex(random_bytes(32)));
 
 mysqli_query($mysqli,
     "INSERT INTO marketing_leads
         (lead_name, lead_email, lead_company, lead_phone, lead_source, lead_notes, lead_status, lead_unsubscribe_token)
-     VALUES ('$n', '$e', '$c', '$p', '$so', '$no', '$st', '$tk')");
+     VALUES ('$lead_name', '$lead_email', '$lead_company', '$lead_phone', '$lead_source', '$lead_notes', '$lead_status', '$token')");
 
 $new_id = mysqli_insert_id($mysqli);
 
@@ -59,7 +51,7 @@ $new_id = mysqli_insert_id($mysqli);
 try {
     $company_row     = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT company_currency FROM companies WHERE company_id = 1 LIMIT 1"));
     $currency_code   = mysqli_real_escape_string($mysqli, $company_row['company_currency'] ?? 'USD');
-    $client_name_val = mysqli_real_escape_string($mysqli, $lead_company ?: $lead_name);
+    $client_name_val = $lead_company ?: $lead_name;
 
     mysqli_query($mysqli,
         "INSERT INTO clients SET
@@ -73,9 +65,9 @@ try {
     if ($new_client_id) {
         mysqli_query($mysqli,
             "INSERT INTO contacts SET
-                contact_name = '$n',
-                contact_email = '$e',
-                contact_phone = '$p',
+                contact_name = '$lead_name',
+                contact_email = '$lead_email',
+                contact_phone = '$lead_phone',
                 contact_primary = 1,
                 contact_important = 1,
                 contact_client_id = $new_client_id");
