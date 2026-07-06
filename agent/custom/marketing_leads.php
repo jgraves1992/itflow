@@ -75,6 +75,9 @@ $sequences_active_sql = mysqli_query($mysqli,
             <button type="button" id="bulkEnrollBtn" class="btn btn-default btn-sm" disabled data-toggle="modal" data-target="#bulkEnrollModal">
                 <i class="fas fa-stream"></i> Enroll Selected (<span class="selectedCount">0</span>)
             </button>
+            <button type="button" id="bulkArchiveBtn" class="btn btn-default btn-sm text-danger" disabled>
+                <i class="fas fa-archive"></i> Archive Selected (<span class="selectedCount">0</span>)
+            </button>
             <?php endif; ?>
             <a href="marketing_leads.php?archived=1" class="btn btn-default btn-sm" title="View archived leads">
                 <i class="fas fa-archive"></i> Archived
@@ -290,6 +293,14 @@ $sequences_active_sql = mysqli_query($mysqli,
 </div>
 
 <?php if ($can_enroll && !$show_archived): ?>
+
+<!-- Hidden bulk-archive form (submitted via JS) -->
+<form id="bulkArchiveForm" action="post.php" method="POST" style="display:none">
+    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+    <input type="hidden" name="bulk_archive_marketing_leads" value="1">
+    <div id="bulkArchiveLeadIds"></div>
+</form>
+
 <!-- Bulk Enroll Modal -->
 <div class="modal fade" id="bulkEnrollModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
@@ -326,14 +337,16 @@ $sequences_active_sql = mysqli_query($mysqli,
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    var selectAll  = document.getElementById('selectAllLeads');
-    var checkboxes = document.querySelectorAll('.lead-checkbox');
-    var bulkBtn    = document.getElementById('bulkEnrollBtn');
-    var countSpans = document.querySelectorAll('.selectedCount');
+    var selectAll      = document.getElementById('selectAllLeads');
+    var checkboxes     = document.querySelectorAll('.lead-checkbox');
+    var bulkEnrollBtn  = document.getElementById('bulkEnrollBtn');
+    var bulkArchiveBtn = document.getElementById('bulkArchiveBtn');
+    var countSpans     = document.querySelectorAll('.selectedCount');
 
     function updateBulkUI() {
         var checkedCount = document.querySelectorAll('.lead-checkbox:checked').length;
-        bulkBtn.disabled = checkedCount === 0;
+        bulkEnrollBtn.disabled  = checkedCount === 0;
+        bulkArchiveBtn.disabled = checkedCount === 0;
         countSpans.forEach(function (span) { span.textContent = checkedCount; });
     }
 
@@ -358,6 +371,22 @@ document.addEventListener('DOMContentLoaded', function () {
             input.value = cb.value;
             container.appendChild(input);
         });
+    });
+
+    bulkArchiveBtn.addEventListener('click', function () {
+        var checked = document.querySelectorAll('.lead-checkbox:checked');
+        if (!checked.length) return;
+        if (!confirm('Archive ' + checked.length + ' lead(s)? Active enrollments will be paused.')) return;
+        var container = document.getElementById('bulkArchiveLeadIds');
+        container.innerHTML = '';
+        checked.forEach(function (cb) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'lead_ids[]';
+            input.value = cb.value;
+            container.appendChild(input);
+        });
+        document.getElementById('bulkArchiveForm').submit();
     });
 });
 </script>
