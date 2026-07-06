@@ -4,10 +4,11 @@ require_once "includes/inc_all_custom.php";
 
 enforceUserPermission('module_client');
 
+$show_archived = !empty($_GET['archived']);
 $status_filter = isset($_GET['status']) ? sanitizeInput($_GET['status']) : '';
 $search        = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
 
-$where = "WHERE lead_archived_at IS NULL";
+$where = $show_archived ? "WHERE lead_archived_at IS NOT NULL" : "WHERE lead_archived_at IS NULL";
 
 // sanitizeInput() already escapes for SQL — do not re-escape, or quotes/backslashes break the match
 if ($status_filter) {
@@ -52,7 +53,12 @@ $sequences_active_sql = mysqli_query($mysqli,
 
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-user-tag mr-2"></i>Marketing Leads</h3>
+        <h3 class="card-title">
+            <i class="fas fa-user-tag mr-2"></i>Marketing Leads
+            <?php if ($show_archived): ?>
+            <span class="badge badge-secondary ml-1">Archived</span>
+            <?php endif; ?>
+        </h3>
         <div class="card-tools">
             <form action="post.php" method="POST" class="d-inline">
                 <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
@@ -61,6 +67,7 @@ $sequences_active_sql = mysqli_query($mysqli,
                     <i class="fas fa-sync-alt"></i> Sync from ITFlow
                 </button>
             </form>
+            <?php if (!$show_archived): ?>
             <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addLeadModal">
                 <i class="fas fa-plus"></i> New Lead
             </button>
@@ -69,11 +76,22 @@ $sequences_active_sql = mysqli_query($mysqli,
                 <i class="fas fa-stream"></i> Enroll Selected (<span class="selectedCount">0</span>)
             </button>
             <?php endif; ?>
+            <a href="marketing_leads.php?archived=1" class="btn btn-default btn-sm" title="View archived leads">
+                <i class="fas fa-archive"></i> Archived
+            </a>
+            <?php else: ?>
+            <a href="marketing_leads.php" class="btn btn-default btn-sm">
+                <i class="fas fa-arrow-left"></i> Active Leads
+            </a>
+            <?php endif; ?>
         </div>
     </div>
 
     <div class="card-body pb-0">
         <form method="GET" class="row">
+            <?php if ($show_archived): ?>
+            <input type="hidden" name="archived" value="1">
+            <?php endif; ?>
             <div class="col-md-5">
                 <div class="input-group input-group-sm mb-3">
                     <input type="text" class="form-control" name="search"
@@ -84,6 +102,7 @@ $sequences_active_sql = mysqli_query($mysqli,
                     </div>
                 </div>
             </div>
+            <?php if (!$show_archived): ?>
             <div class="col-md-3">
                 <select class="form-control form-control-sm" name="status" onchange="this.form.submit()">
                     <option value="">All Statuses</option>
@@ -92,9 +111,10 @@ $sequences_active_sql = mysqli_query($mysqli,
                     <?php endforeach; ?>
                 </select>
             </div>
+            <?php endif; ?>
             <?php if ($search || $status_filter): ?>
             <div class="col-md-2">
-                <a href="marketing_leads.php" class="btn btn-default btn-sm">Clear</a>
+                <a href="marketing_leads.php<?= $show_archived ? '?archived=1' : '' ?>" class="btn btn-default btn-sm">Clear</a>
             </div>
             <?php endif; ?>
         </form>
@@ -104,7 +124,7 @@ $sequences_active_sql = mysqli_query($mysqli,
         <table class="table table-hover table-sm">
             <thead>
                 <tr>
-                    <?php if ($can_enroll): ?>
+                    <?php if ($can_enroll && !$show_archived): ?>
                     <th><input type="checkbox" id="selectAllLeads"></th>
                     <?php endif; ?>
                     <th>Name</th>
@@ -112,15 +132,15 @@ $sequences_active_sql = mysqli_query($mysqli,
                     <th>Email</th>
                     <th>Status</th>
                     <th>Source</th>
-                    <th>Sequences</th>
-                    <th>Added</th>
+                    <?php if (!$show_archived): ?><th>Sequences</th><?php endif; ?>
+                    <th><?= $show_archived ? 'Archived' : 'Added' ?></th>
                     <th></th>
                 </tr>
             </thead>
             <tbody>
             <?php if (mysqli_num_rows($sql) === 0): ?>
                 <tr>
-                    <td colspan="<?= $can_enroll ? 9 : 8 ?>" class="text-center text-muted py-4">
+                    <td colspan="<?= ($can_enroll && !$show_archived) ? 9 : 8 ?>" class="text-center text-muted py-4">
                         No leads found. Click <strong>New Lead</strong> to add your first prospect.
                     </td>
                 </tr>
@@ -139,7 +159,7 @@ $sequences_active_sql = mysqli_query($mysqli,
                      WHERE enrollment_lead_id = $lead_id AND enrollment_status = 'active'"))['cnt']);
             ?>
                 <tr>
-                    <?php if ($can_enroll): ?>
+                    <?php if ($can_enroll && !$show_archived): ?>
                     <td>
                         <?php if (!$row['lead_unsubscribed']): ?>
                         <input type="checkbox" class="lead-checkbox" value="<?= $lead_id ?>">
@@ -156,6 +176,7 @@ $sequences_active_sql = mysqli_query($mysqli,
                     <td><a href="mailto:<?= $lead_email ?>"><?= $lead_email ?></a></td>
                     <td><span class="badge badge-<?= $badge_color ?>"><?= ucfirst($lead_status) ?></span></td>
                     <td><?= $lead_source ?></td>
+                    <?php if (!$show_archived): ?>
                     <td>
                         <?php if ($active_seq > 0): ?>
                             <span class="badge badge-info"><?= $active_seq ?> active</span>
@@ -163,15 +184,26 @@ $sequences_active_sql = mysqli_query($mysqli,
                             <span class="text-muted">—</span>
                         <?php endif; ?>
                     </td>
-                    <td><?= date('M j, Y', strtotime($row['lead_created_at'])) ?></td>
+                    <?php endif; ?>
+                    <td><?= $show_archived
+                        ? date('M j, Y', strtotime($row['lead_archived_at']))
+                        : date('M j, Y', strtotime($row['lead_created_at'])) ?></td>
                     <td class="text-right">
                         <a href="marketing_lead_details.php?id=<?= $lead_id ?>" class="btn btn-xs btn-default" title="View"><i class="fas fa-eye"></i></a>
                         <?php if (lookupUserPermission('module_client') >= 2): ?>
+                        <?php if ($show_archived): ?>
+                        <a href="post.php"
+                           onclick="if(!confirm('Restore this lead?')) return false; this.href='post.php?unarchive_marketing_lead=1&id=<?= $lead_id ?>&csrf_token=<?= $_SESSION['csrf_token'] ?>';"
+                           class="btn btn-xs btn-default text-success" title="Restore">
+                            <i class="fas fa-undo"></i>
+                        </a>
+                        <?php else: ?>
                         <a href="post.php"
                            onclick="if(!confirm('Archive this lead?')) return false; this.href='post.php?archive_marketing_lead=1&id=<?= $lead_id ?>&csrf_token=<?= $_SESSION['csrf_token'] ?>';"
                            class="btn btn-xs btn-default text-danger" title="Archive">
                             <i class="fas fa-archive"></i>
                         </a>
+                        <?php endif; ?>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -187,7 +219,7 @@ $sequences_active_sql = mysqli_query($mysqli,
         for ($i = 1; $i <= $total_pages; $i++):
             $active_class = ($i === $page) ? 'btn-primary' : 'btn-default';
         ?>
-        <a href="?page=<?= $i ?>&search=<?= urlencode($search) ?>&status=<?= urlencode($status_filter) ?>"
+        <a href="?page=<?= $i ?>&search=<?= urlencode($search) ?>&status=<?= urlencode($status_filter) ?><?= $show_archived ? '&archived=1' : '' ?>"
            class="btn btn-sm <?= $active_class ?>"><?= $i ?></a>
         <?php endfor; ?>
         <span class="text-muted ml-2"><?= $record_count ?> total</span>
@@ -257,7 +289,7 @@ $sequences_active_sql = mysqli_query($mysqli,
     </div>
 </div>
 
-<?php if ($can_enroll): ?>
+<?php if ($can_enroll && !$show_archived): ?>
 <!-- Bulk Enroll Modal -->
 <div class="modal fade" id="bulkEnrollModal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
