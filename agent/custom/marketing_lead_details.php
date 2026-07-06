@@ -7,13 +7,15 @@ enforceUserPermission('module_client');
 $lead_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 $lead = mysqli_fetch_assoc(mysqli_query($mysqli,
-    "SELECT * FROM marketing_leads WHERE lead_id = $lead_id AND lead_archived_at IS NULL"));
+    "SELECT * FROM marketing_leads WHERE lead_id = $lead_id"));
 
 if (!$lead) {
     flash_alert('Lead not found.', 'error');
     header('Location: marketing_leads.php');
     exit;
 }
+
+$is_archived = !empty($lead['lead_archived_at']);
 
 $sequences_available = mysqli_query($mysqli,
     "SELECT s.* FROM marketing_sequences s
@@ -67,9 +69,27 @@ $enrollment_colors = [
                         <i class="fas fa-external-link-alt"></i>
                     </a>
                     <?php endif; ?>
+                    <?php if (!$is_archived): ?>
                     <button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#editLeadModal">
                         <i class="fas fa-edit"></i> Edit
                     </button>
+                    <?php if (lookupUserPermission('module_client') >= 2): ?>
+                    <a href="post.php"
+                       onclick="if(!confirm('Archive this lead? Active enrollments will be paused.')) return false; this.href='post.php?archive_marketing_lead=1&id=<?= $lead_id ?>&csrf_token=<?= $_SESSION['csrf_token'] ?>';"
+                       class="btn btn-default btn-sm text-danger" title="Archive lead">
+                        <i class="fas fa-archive"></i> Archive
+                    </a>
+                    <?php endif; ?>
+                    <?php else: ?>
+                    <span class="badge badge-secondary mr-1">Archived <?= date('M j, Y', strtotime($lead['lead_archived_at'])) ?></span>
+                    <?php if (lookupUserPermission('module_client') >= 2): ?>
+                    <a href="post.php"
+                       onclick="if(!confirm('Restore this lead?')) return false; this.href='post.php?unarchive_marketing_lead=1&id=<?= $lead_id ?>&csrf_token=<?= $_SESSION['csrf_token'] ?>';"
+                       class="btn btn-default btn-sm text-success" title="Restore lead">
+                        <i class="fas fa-undo"></i> Restore
+                    </a>
+                    <?php endif; ?>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="card-body">

@@ -18,5 +18,10 @@ mysqli_query($mysqli,
     "UPDATE marketing_leads SET lead_archived_at = NULL WHERE lead_id = $lead_id");
 
 flash_alert('Lead restored.');
-header('Location: /agent/custom/marketing_leads.php?archived=1');
+$referer = $_SERVER['HTTP_REFERER'] ?? '';
+if (strpos($referer, 'marketing_lead_details') !== false) {
+    header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");
+} else {
+    header('Location: /agent/custom/marketing_leads.php?archived=1');
+}
 exit;

@@ -27,3 +27,4 @@ mysqli_query($mysqli,
 flash_alert('Lead archived.');
 header('Location: /agent/custom/marketing_leads.php');
 exit;
+
