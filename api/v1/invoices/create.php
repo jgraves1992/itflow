@@ -34,7 +34,16 @@ require_once "../../../includes/load_global_settings.php";
 
 require_once 'invoice_model.php';
 
-$insert_id = false;
+// mark_paid: create invoice already in Paid status and record a payment entry atomically
+$mark_paid          = !empty($_POST['mark_paid']) && $_POST['mark_paid'] !== 'false' && $_POST['mark_paid'] !== '0';
+$payment_date       = (isset($_POST['payment_date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['payment_date']))
+                        ? sanitizeInput($_POST['payment_date']) : date('Y-m-d');
+$payment_method     = isset($_POST['payment_method'])     ? sanitizeInput($_POST['payment_method'])     : 'Stripe';
+$payment_reference  = isset($_POST['payment_reference'])  ? sanitizeInput($_POST['payment_reference'])  : '';
+$payment_account_id = isset($_POST['payment_account_id']) ? intval($_POST['payment_account_id'])        : 0;
+
+$invoice_status = $mark_paid ? 'Paid' : 'Sent';
+$insert_id      = false;
 
 if (empty($scope)) {
     $return_arr['success'] = "False";
@@ -72,7 +81,7 @@ $insert_sql = mysqli_query($mysqli, "
         invoice_currency_code   = '$currency_code',
         invoice_note            = '$note',
         invoice_category_id     = $category_id,
-        invoice_status          = 'Sent',
+        invoice_status          = '$invoice_status',
         invoice_url_key         = '$url_key',
         invoice_client_id       = $client_id
 ");
@@ -97,12 +106,28 @@ if ($insert_sql) {
         ");
     }
 
+    $history_status = $mark_paid ? 'Paid' : 'Sent';
     mysqli_query($mysqli, "
         INSERT INTO history SET
-            history_status      = 'Sent',
+            history_status      = '$history_status',
             history_description = 'Invoice created via API ($api_key_name)',
             history_invoice_id  = $insert_id
     ");
+
+    $payment_id = null;
+    if ($mark_paid) {
+        mysqli_query($mysqli, "
+            INSERT INTO payments SET
+                payment_date          = '$payment_date',
+                payment_amount        = $invoice_amount,
+                payment_currency_code = '$currency_code',
+                payment_account_id    = $payment_account_id,
+                payment_method        = '$payment_method',
+                payment_reference     = '$payment_reference',
+                payment_invoice_id    = $insert_id
+        ");
+        $payment_id = mysqli_insert_id($mysqli);
+    }
 
     if ($send_email) {
         $contact_row = mysqli_fetch_assoc(mysqli_query($mysqli, "
@@ -138,12 +163,17 @@ if ($insert_sql) {
 
     $return_arr['success'] = "True";
     $return_arr['count']   = "1";
-    $return_arr['data'][]  = [
+    $data = [
         'insert_id'      => $insert_id,
         'invoice_number' => $config_invoice_prefix . $new_invoice_number,
         'total'          => $invoice_amount,
         'due_date'       => $due_date,
+        'status'         => $invoice_status,
     ];
+    if ($payment_id) {
+        $data['payment_id'] = $payment_id;
+    }
+    $return_arr['data'][] = $data;
 
 } else {
     $return_arr['success'] = "False";
