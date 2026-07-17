@@ -139,12 +139,16 @@ if ($insert_sql) {
             $expense_desc = sanitizeInput("Gateway fee ($payment_method) — ref: $payment_reference");
             mysqli_query($mysqli, "
                 INSERT INTO expenses SET
-                    expense_date        = '$payment_date',
-                    expense_description = '$expense_desc',
-                    expense_amount      = $expense_amount,
-                    expense_vendor_id   = $expense_vendor_id,
-                    expense_category_id = $expense_category_id,
-                    expense_invoice_id  = $insert_id
+                    expense_date          = '$payment_date',
+                    expense_description   = '$expense_desc',
+                    expense_amount        = $expense_amount,
+                    expense_currency_code = '$currency_code',
+                    expense_account_id    = $payment_account_id,
+                    expense_client_id     = $client_id,
+                    expense_vendor_id     = $expense_vendor_id,
+                    expense_category_id   = $expense_category_id,
+                    expense_reference     = '$payment_reference',
+                    expense_invoice_id    = $insert_id
             ");
             $expense_id = mysqli_insert_id($mysqli);
         }
