@@ -85,8 +85,8 @@ mysqli_query($mysqli, "
 if (mysqli_affected_rows($mysqli) > 0) {
     $insert_id = mysqli_insert_id($mysqli);
 
-    logAction("Software", "Create", "Software '$name' created via API ($api_key_name)", $client_id, $insert_id);
-    logAction("API", "Success", "Created software '$name' via API ($api_key_name)", $client_id);
+    logAction("Software", "Create", "Software $name created via API ($api_key_name)", $client_id, $insert_id);
+    logAction("API", "Success", "Created software $name via API ($api_key_name)", $client_id);
 
     $return_arr['success'] = "True";
     $return_arr['count']   = "1";
