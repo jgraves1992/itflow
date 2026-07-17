@@ -136,7 +136,7 @@ if ($insert_sql) {
 
         // Record gateway fee as expense if all three fields provided
         if ($expense_vendor_id > 0 && $expense_category_id > 0 && $expense_amount > 0) {
-            $expense_desc = sanitizeInput("Gateway fee ($payment_method) — ref: $payment_reference");
+            $expense_desc = sanitizeInput("Gateway fee ($payment_method) - ref: $payment_reference");
             mysqli_query($mysqli, "
                 INSERT INTO expenses SET
                     expense_date          = '$payment_date',
@@ -147,8 +147,7 @@ if ($insert_sql) {
                     expense_client_id     = $client_id,
                     expense_vendor_id     = $expense_vendor_id,
                     expense_category_id   = $expense_category_id,
-                    expense_reference     = '$payment_reference',
-                    expense_invoice_id    = $insert_id
+                    expense_reference     = '$payment_reference'
             ");
             $expense_id = mysqli_insert_id($mysqli);
         }
