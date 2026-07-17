@@ -8,13 +8,16 @@
  * Header: Content-Type: application/json
  * Body:
  * {
- *   "api_key":           "your-key",
- *   "invoice_id":        42,
- *   "payment_date":      "2026-07-17",   // optional, default today
- *   "payment_amount":    99.00,          // optional, default full invoice amount
- *   "payment_method":    "Stripe",       // optional, default "Stripe"
- *   "payment_reference": "pi_3abc123",   // optional, e.g. Stripe PaymentIntent ID
- *   "payment_account_id": 1              // optional, default 0 (unassigned)
+ *   "api_key":             "your-key",
+ *   "invoice_id":          42,
+ *   "payment_date":        "2026-07-17",   // optional, default today
+ *   "payment_amount":      99.00,          // optional, default full invoice amount
+ *   "payment_method":      "Stripe",       // optional, default "Stripe"
+ *   "payment_reference":   "pi_3abc123",   // optional, e.g. Stripe PaymentIntent/Invoice ID
+ *   "payment_account_id":  1,              // optional, default 0 (unassigned)
+ *   "expense_vendor_id":   3,              // optional — record gateway fee as expense when provided
+ *   "expense_category_id": 8,             // optional — required alongside expense_vendor_id
+ *   "expense_amount":      3.22           // optional — fee amount; required to record expense
  * }
  *
  * Returns: {"success": "True", "data": [{"invoice_id": 42, "payment_id": 17, "amount_paid": 99.00}]}
@@ -72,6 +75,11 @@ $payment_method    = isset($_POST['payment_method'])    ? sanitizeInput($_POST['
 $payment_reference = isset($_POST['payment_reference']) ? sanitizeInput($_POST['payment_reference']) : '';
 $payment_account_id = isset($_POST['payment_account_id']) ? intval($_POST['payment_account_id']) : 0;
 
+// Optional gateway fee expense fields
+$expense_vendor_id   = isset($_POST['expense_vendor_id'])   ? intval($_POST['expense_vendor_id'])          : 0;
+$expense_category_id = isset($_POST['expense_category_id']) ? intval($_POST['expense_category_id'])        : 0;
+$expense_amount      = isset($_POST['expense_amount'])       ? round(floatval($_POST['expense_amount']), 2) : 0.0;
+
 $currency_code = sanitizeInput($invoice['invoice_currency_code']);
 $resolved_client_id = intval($invoice['invoice_client_id']);
 
@@ -111,17 +119,38 @@ mysqli_query($mysqli, "
         history_invoice_id  = $invoice_id
 ");
 
+// Record gateway fee as an expense when all three fields are provided
+$expense_id = null;
+if ($expense_vendor_id > 0 && $expense_category_id > 0 && $expense_amount > 0) {
+    $expense_desc = sanitizeInput("Gateway fee ($payment_method) — ref: $payment_reference");
+    mysqli_query($mysqli, "
+        INSERT INTO expenses SET
+            expense_date        = '$payment_date',
+            expense_description = '$expense_desc',
+            expense_amount      = $expense_amount,
+            expense_vendor_id   = $expense_vendor_id,
+            expense_category_id = $expense_category_id,
+            expense_invoice_id  = $invoice_id
+    ");
+    $expense_id = mysqli_insert_id($mysqli);
+}
+
 logAction("Invoice", "Payment", "Invoice $invoice_id marked paid via API ($api_key_name) — $payment_method $currency_code $payment_amount", $resolved_client_id, $invoice_id);
 logAction("API", "Success", "Marked invoice $invoice_id paid via API ($api_key_name)", $resolved_client_id);
 
 $return_arr['success'] = "True";
 $return_arr['count']   = "1";
-$return_arr['data'][]  = [
+$data = [
     'invoice_id'  => $invoice_id,
     'payment_id'  => $payment_id,
     'amount_paid' => $payment_amount,
     'method'      => $payment_method,
 ];
+if ($expense_id) {
+    $data['expense_id']     = $expense_id;
+    $data['expense_amount'] = $expense_amount;
+}
+$return_arr['data'][] = $data;
 
 echo json_encode($return_arr);
 exit();

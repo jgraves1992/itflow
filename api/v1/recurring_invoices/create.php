@@ -40,29 +40,31 @@ require_once '../invoices/invoice_model.php';
 // Recurring-specific fields
 // ------------------------------------------------------------------
 
-// Frequency — accept friendly names or raw DB values (MySQL interval units)
+// Frequency — stored as lowercase (month, year, etc.) to match ITFlow's native format.
+// The display layer appends "ly" (ucwords($freq)."ly") and dashboard queries filter on lowercase.
+// MySQL's INTERVAL unit is case-insensitive so the cron works with either case.
 $frequency_map = [
-    'daily'     => 'DAY',
-    'day'       => 'DAY',
-    'weekly'    => 'WEEK',
-    'week'      => 'WEEK',
-    'monthly'   => 'MONTH',
-    'month'     => 'MONTH',
-    'quarterly' => 'QUARTER',
-    'quarter'   => 'QUARTER',
-    'annually'  => 'YEAR',
-    'yearly'    => 'YEAR',
-    'year'      => 'YEAR',
-    // Also accept raw DB values in case caller knows them
-    'DAY'       => 'DAY',
-    'WEEK'      => 'WEEK',
-    'MONTH'     => 'MONTH',
-    'QUARTER'   => 'QUARTER',
-    'YEAR'      => 'YEAR',
+    'daily'     => 'day',
+    'day'       => 'day',
+    'weekly'    => 'week',
+    'week'      => 'week',
+    'monthly'   => 'month',
+    'month'     => 'month',
+    'quarterly' => 'quarter',
+    'quarter'   => 'quarter',
+    'annually'  => 'year',
+    'yearly'    => 'year',
+    'year'      => 'year',
+    // Accept uppercase DB values from callers who read them back out
+    'DAY'       => 'day',
+    'WEEK'      => 'week',
+    'MONTH'     => 'month',
+    'QUARTER'   => 'quarter',
+    'YEAR'      => 'year',
 ];
 
 $frequency_input = strtolower(trim($_POST['frequency'] ?? ''));
-$frequency       = $frequency_map[$frequency_input] ?? ($frequency_map[strtoupper($frequency_input)] ?? '');
+$frequency       = $frequency_map[$frequency_input] ?? '';
 
 $next_date = (isset($_POST['next_date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['next_date']))
     ? sanitizeInput($_POST['next_date'])

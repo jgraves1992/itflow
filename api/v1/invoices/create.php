@@ -42,6 +42,11 @@ $payment_method     = isset($_POST['payment_method'])     ? sanitizeInput($_POST
 $payment_reference  = isset($_POST['payment_reference'])  ? sanitizeInput($_POST['payment_reference'])  : '';
 $payment_account_id = isset($_POST['payment_account_id']) ? intval($_POST['payment_account_id'])        : 0;
 
+// Optional gateway fee expense — recorded alongside payment when mark_paid is true
+$expense_vendor_id   = isset($_POST['expense_vendor_id'])   ? intval($_POST['expense_vendor_id'])          : 0;
+$expense_category_id = isset($_POST['expense_category_id']) ? intval($_POST['expense_category_id'])        : 0;
+$expense_amount      = isset($_POST['expense_amount'])       ? round(floatval($_POST['expense_amount']), 2) : 0.0;
+
 $invoice_status = $mark_paid ? 'Paid' : 'Sent';
 $insert_id      = false;
 
@@ -115,6 +120,7 @@ if ($insert_sql) {
     ");
 
     $payment_id = null;
+    $expense_id = null;
     if ($mark_paid) {
         mysqli_query($mysqli, "
             INSERT INTO payments SET
@@ -127,6 +133,21 @@ if ($insert_sql) {
                 payment_invoice_id    = $insert_id
         ");
         $payment_id = mysqli_insert_id($mysqli);
+
+        // Record gateway fee as expense if all three fields provided
+        if ($expense_vendor_id > 0 && $expense_category_id > 0 && $expense_amount > 0) {
+            $expense_desc = sanitizeInput("Gateway fee ($payment_method) — ref: $payment_reference");
+            mysqli_query($mysqli, "
+                INSERT INTO expenses SET
+                    expense_date        = '$payment_date',
+                    expense_description = '$expense_desc',
+                    expense_amount      = $expense_amount,
+                    expense_vendor_id   = $expense_vendor_id,
+                    expense_category_id = $expense_category_id,
+                    expense_invoice_id  = $insert_id
+            ");
+            $expense_id = mysqli_insert_id($mysqli);
+        }
     }
 
     if ($send_email) {
@@ -172,6 +193,10 @@ if ($insert_sql) {
     ];
     if ($payment_id) {
         $data['payment_id'] = $payment_id;
+    }
+    if ($expense_id) {
+        $data['expense_id']     = $expense_id;
+        $data['expense_amount'] = $expense_amount;
     }
     $return_arr['data'][] = $data;
 
