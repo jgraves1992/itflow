@@ -37,7 +37,7 @@ if (isset($_POST['client_referral'])) {
 if (isset($_POST['client_rate'])) {
     $rate = floatval($_POST['client_rate']);
 } elseif ($client_row) {
-    $rate = $client_row['client_rate'];
+    $rate = floatval($client_row['client_rate']);
 } else {
     $rate = 0;
 }
@@ -53,7 +53,7 @@ if (isset($_POST['client_currency_code'])) {
 if (isset($_POST['client_net_terms'])) {
     $net_terms = intval($_POST['client_net_terms']);
 } elseif ($client_row) {
-    $net_terms = $client_row['client_net_terms'];
+    $net_terms = intval($client_row['client_net_terms']);
 } else {
     $net_terms = 0;
 }
