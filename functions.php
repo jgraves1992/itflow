@@ -1502,9 +1502,9 @@ function logAction($type, $action, $description, $client_id = 0, $entity_id = 0)
         $session_user_id = 0;
     }
 
-    $type = substr($type, 0, 200);
-    $action = substr($action, 0, 255);
-    $description = substr($description, 0, 1000);
+    $type        = mysqli_real_escape_string($mysqli, substr($type, 0, 200));
+    $action      = mysqli_real_escape_string($mysqli, substr($action, 0, 255));
+    $description = mysqli_real_escape_string($mysqli, substr($description, 0, 1000));
 
     mysqli_query($mysqli, "INSERT INTO logs SET log_type = '$type', log_action = '$action', log_description = '$description', log_ip = '$session_ip', log_user_agent = '$session_user_agent', log_client_id = $client_id, log_user_id = $session_user_id, log_entity_id = $entity_id");
 }
