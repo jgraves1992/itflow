@@ -102,6 +102,17 @@ logApp("Cron", "info", "Cron Started");
  * ###############################################################################################################
  */
 
+// Archive client records where the linked marketing lead has been archived
+mysqli_query($mysqli, "
+    UPDATE clients c
+    JOIN marketing_leads ml ON ml.lead_client_id = c.client_id
+    SET c.client_archived_at = NOW()
+    WHERE ml.lead_archived_at IS NOT NULL
+      AND ml.lead_client_id > 0
+      AND c.client_archived_at IS NULL
+      AND c.client_lead = 1
+");
+
 // Clean-up ticket views table used for collision detection
 mysqli_query($mysqli, "TRUNCATE TABLE ticket_views");
 
