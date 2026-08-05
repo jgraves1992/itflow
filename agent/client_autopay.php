@@ -119,7 +119,7 @@ if ($stripe_client_details && !empty($stripe_id) && empty($stripe_pm)) {
                 <?php if ($checkout_error) { ?>
                     <div class="alert alert-danger">Could not initialize payment setup: <?= $checkout_error ?></div>
                 <?php } elseif ($checkout_client_secret) { ?>
-                    <div id="checkout"><p class="text-muted"><i class="fas fa-spinner fa-spin"></i> Loading payment form...</p></div>
+                    <div id="checkout"></div>
                     <script src="https://js.stripe.com/v3/"></script>
                     <script>
                     (async function() {
