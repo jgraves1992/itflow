@@ -47,14 +47,16 @@ $contract_net_terms   = escapeHtml($row['contract_net_terms']);
 $contract_support_hrs = escapeHtml($row['contract_support_hours']);
 $contract_rate_std    = floatval($row['contract_rate_standard']);
 $contract_rate_ah     = floatval($row['contract_rate_after_hours']);
-$contract_sla_id      = intval($row['contract_sla_id']);
-// Resolve SLA plan name for display
-$contract_sla_name = null;
-if ($contract_sla_id > 0) {
-    $sla_row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT sla_name, sla_description FROM slas WHERE sla_id = $contract_sla_id LIMIT 1"));
-    if ($sla_row) {
-        $contract_sla_name        = escapeHtml($sla_row['sla_name']);
-        $contract_sla_description = escapeHtml($sla_row['sla_description'] ?? '');
+$contract_sla_low_id    = intval($row['contract_sla_low_id']);
+$contract_sla_medium_id = intval($row['contract_sla_medium_id']);
+$contract_sla_high_id   = intval($row['contract_sla_high_id']);
+
+// Resolve SLA plan names for display
+$contract_sla_names = ['low' => null, 'medium' => null, 'high' => null];
+foreach (['low' => $contract_sla_low_id, 'medium' => $contract_sla_medium_id, 'high' => $contract_sla_high_id] as $p => $sid) {
+    if ($sid > 0) {
+        $sla_r = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT sla_name FROM slas WHERE sla_id = $sid LIMIT 1"));
+        if ($sla_r) { $contract_sla_names[$p] = escapeHtml($sla_r['sla_name']); }
     }
 }
 $snap_client_name     = escapeHtml($row['contract_client_name']);
@@ -197,28 +199,36 @@ switch ($contract_status) {
     <div class="col-lg-6">
         <div class="card card-outline card-dark">
             <div class="card-header py-2">
-                <h3 class="card-title"><i class="fas fa-fw fa-stopwatch mr-2"></i>SLA Plan</h3>
-                <?php if ($contract_sla_id > 0) { ?>
-                    <div class="card-tools">
-                        <a href="/admin/sla.php" class="btn btn-sm btn-secondary" target="_blank">
-                            <i class="fas fa-cog mr-1"></i>Manage SLA Plans
-                        </a>
-                    </div>
-                <?php } ?>
+                <h3 class="card-title"><i class="fas fa-fw fa-stopwatch mr-2"></i>SLA Plans</h3>
             </div>
-            <div class="card-body">
-                <?php if ($contract_sla_name) { ?>
-                    <p class="mb-1"><strong><?= $contract_sla_name ?></strong></p>
-                    <?php if (!empty($contract_sla_description)) { ?>
-                        <p class="text-muted small mb-0"><?= $contract_sla_description ?></p>
-                    <?php } ?>
-                    <?php if ($contract_status === 'Active') { ?>
-                        <p class="text-success small mt-2 mb-0"><i class="fas fa-check-circle mr-1"></i>This plan is currently enforced for client tickets.</p>
-                    <?php } else { ?>
-                        <p class="text-muted small mt-2 mb-0"><i class="fas fa-info-circle mr-1"></i>Plan will be enforced when contract status is Active.</p>
-                    <?php } ?>
+            <div class="card-body p-0">
+                <table class="table table-sm table-borderless mb-0">
+                    <thead class="text-dark">
+                        <tr>
+                            <th class="pl-3">Priority</th>
+                            <th>SLA Plan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ([
+                            ['low',    'Low',    'badge-success',           $contract_sla_names['low']],
+                            ['medium', 'Medium', 'badge-warning text-dark', $contract_sla_names['medium']],
+                            ['high',   'High',   'badge-danger',            $contract_sla_names['high']],
+                        ] as [, $label, $badge, $sla_name]) { ?>
+                        <tr>
+                            <td class="pl-3"><span class="badge <?= $badge ?>"><?= $label ?></span></td>
+                            <td><?= $sla_name ?? '<span class="text-muted">— None —</span>' ?></td>
+                        </tr>
+                        <?php } ?>
+                    </tbody>
+                </table>
+                <?php $any_sla = $contract_sla_low_id || $contract_sla_medium_id || $contract_sla_high_id; ?>
+                <?php if ($any_sla && $contract_status === 'Active') { ?>
+                    <p class="text-success small px-3 pb-2 mb-0"><i class="fas fa-check-circle mr-1"></i>Active — overriding standard SLA assignments for this client's tickets.</p>
+                <?php } elseif ($any_sla) { ?>
+                    <p class="text-muted small px-3 pb-2 mb-0"><i class="fas fa-info-circle mr-1"></i>Plans will be enforced when contract status is Active.</p>
                 <?php } else { ?>
-                    <p class="text-muted mb-0">No SLA plan linked. Standard SLA assignments apply.</p>
+                    <p class="text-muted small px-3 pb-2 mb-0">No SLA plans linked. Standard SLA assignments apply.</p>
                 <?php } ?>
             </div>
         </div>

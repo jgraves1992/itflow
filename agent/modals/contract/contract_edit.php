@@ -203,29 +203,43 @@ ob_start();
                 $sql_slas_edit = mysqli_query($mysqli, "SELECT sla_id, sla_name, sla_description FROM slas WHERE sla_archived_at IS NULL ORDER BY sla_name ASC");
                 $slas_list_edit = [];
                 while ($s = mysqli_fetch_assoc($sql_slas_edit)) { $slas_list_edit[] = $s; }
-                $current_sla_id = intval($row['contract_sla_id']);
+                $current_sla_ids = [
+                    'low'    => intval($row['contract_sla_low_id']),
+                    'medium' => intval($row['contract_sla_medium_id']),
+                    'high'   => intval($row['contract_sla_high_id']),
+                ];
+                ?>
+                <p class="text-muted small mb-3">Link a native SLA plan per priority. While this contract is Active these override standard SLA assignments for the client's tickets.</p>
+                <?php
+                $sla_priorities_edit = [
+                    ['low',    'Low',    'badge-success'],
+                    ['medium', 'Medium', 'badge-warning text-dark'],
+                    ['high',   'High',   'badge-danger'],
+                ];
+                foreach ($sla_priorities_edit as [$key, $label, $badge]) {
+                    $current = $current_sla_ids[$key];
                 ?>
                 <div class="form-group">
-                    <label>SLA Plan</label>
-                    <p class="text-muted small mb-2">The selected plan applies to all tickets for this client while the contract is Active, overriding standard SLA assignments.</p>
+                    <label><span class="badge <?= $badge ?>"><?= $label ?></span> Priority SLA Plan</label>
                     <div class="input-group">
                         <div class="input-group-prepend">
                             <span class="input-group-text"><i class="fa fa-fw fa-stopwatch"></i></span>
                         </div>
-                        <select class="form-control select2" name="contract_sla_id" id="contractSlaIdEdit">
+                        <select class="form-control select2" name="contract_sla_<?= $key ?>_id">
                             <option value="0">- None -</option>
                             <?php foreach ($slas_list_edit as $sla) { ?>
-                                <option value="<?= intval($sla['sla_id']) ?>" <?= $current_sla_id === intval($sla['sla_id']) ? 'selected' : '' ?>>
+                                <option value="<?= intval($sla['sla_id']) ?>" <?= $current === intval($sla['sla_id']) ? 'selected' : '' ?>>
                                     <?= escapeHtml($sla['sla_name']) ?>
                                     <?= $sla['sla_description'] ? ' — ' . escapeHtml($sla['sla_description']) : '' ?>
                                 </option>
                             <?php } ?>
                         </select>
                     </div>
-                    <?php if (empty($slas_list_edit)) { ?>
-                        <p class="text-muted small mt-2"><i class="fas fa-info-circle mr-1"></i>No SLA plans configured. <a href="/admin/sla.php" target="_blank">Create one in Admin → SLA</a>.</p>
-                    <?php } ?>
                 </div>
+                <?php } ?>
+                <?php if (empty($slas_list_edit)) { ?>
+                    <p class="text-muted small mt-2"><i class="fas fa-info-circle mr-1"></i>No SLA plans configured. <a href="/admin/sla.php" target="_blank">Create one in Admin → SLA</a>.</p>
+                <?php } ?>
             </div>
 
             <!-- Rates & Support Tab -->

@@ -96,14 +96,21 @@ ob_start();
                 $slas_list_ta = [];
                 while ($s = mysqli_fetch_assoc($sql_slas_ta)) { $slas_list_ta[] = $s; }
                 ?>
+                <p class="text-muted small mb-3">Link a native SLA plan per priority. When a contract using this template is Active these override standard SLA assignments for the client's tickets.</p>
+                <?php
+                foreach ([
+                    ['low',    'Low',    'badge-success'],
+                    ['medium', 'Medium', 'badge-warning text-dark'],
+                    ['high',   'High',   'badge-danger'],
+                ] as [$key, $label, $badge]) {
+                ?>
                 <div class="form-group">
-                    <label>SLA Plan</label>
-                    <p class="text-muted small mb-2">When a contract using this template is Active, the selected plan overrides standard SLA assignments for the client's tickets.</p>
+                    <label><span class="badge <?= $badge ?>"><?= $label ?></span> Priority SLA Plan</label>
                     <div class="input-group">
                         <div class="input-group-prepend">
                             <span class="input-group-text"><i class="fa fa-fw fa-stopwatch"></i></span>
                         </div>
-                        <select class="form-control select2" name="contract_template_sla_id">
+                        <select class="form-control select2" name="contract_template_sla_<?= $key ?>_id">
                             <option value="0">- None -</option>
                             <?php foreach ($slas_list_ta as $sla) { ?>
                                 <option value="<?= intval($sla['sla_id']) ?>">
@@ -113,10 +120,11 @@ ob_start();
                             <?php } ?>
                         </select>
                     </div>
-                    <?php if (empty($slas_list_ta)) { ?>
-                        <p class="text-muted small mt-2"><i class="fas fa-info-circle mr-1"></i>No SLA plans configured. <a href="/admin/sla.php">Create one in Admin → SLA</a>.</p>
-                    <?php } ?>
                 </div>
+                <?php } ?>
+                <?php if (empty($slas_list_ta)) { ?>
+                    <p class="text-muted small mt-2"><i class="fas fa-info-circle mr-1"></i>No SLA plans configured. <a href="/admin/sla.php">Create one in Admin → SLA</a>.</p>
+                <?php } ?>
             </div>
 
             <!-- Rates & Support Tab -->

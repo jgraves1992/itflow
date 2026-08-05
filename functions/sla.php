@@ -320,23 +320,35 @@ function getTicketSlaId($client_id, $priority)
 
     $sla_id = null;
 
-    // Active contract with a linked SLA plan takes highest priority
+    // Active contract with per-priority SLA plan takes highest priority
     if ($client_id > 0) {
-        $sql = mysqli_query($mysqli, "
-            SELECT contract_sla_id FROM contracts
-            WHERE contract_client_id = $client_id
-              AND contract_status = 'Active'
-              AND contract_sla_id IS NOT NULL
-              AND contract_archived_at IS NULL
-            ORDER BY contract_id DESC
-            LIMIT 1
-        ");
-        if (mysqli_num_rows($sql)) {
-            $contract_sla_id = intval(mysqli_fetch_assoc($sql)['contract_sla_id']);
-            if ($contract_sla_id > 0) {
-                $check = mysqli_query($mysqli, "SELECT sla_id FROM slas WHERE sla_id = $contract_sla_id AND sla_archived_at IS NULL LIMIT 1");
-                if (mysqli_num_rows($check)) {
-                    return $contract_sla_id;
+        if ($priority === 'Low') {
+            $priority_col = 'contract_sla_low_id';
+        } elseif ($priority === 'Medium') {
+            $priority_col = 'contract_sla_medium_id';
+        } elseif ($priority === 'High') {
+            $priority_col = 'contract_sla_high_id';
+        } else {
+            $priority_col = null;
+        }
+
+        if ($priority_col) {
+            $sql = mysqli_query($mysqli, "
+                SELECT $priority_col AS contract_sla_id FROM contracts
+                WHERE contract_client_id = $client_id
+                  AND contract_status = 'Active'
+                  AND $priority_col IS NOT NULL
+                  AND contract_archived_at IS NULL
+                ORDER BY contract_id DESC
+                LIMIT 1
+            ");
+            if (mysqli_num_rows($sql)) {
+                $contract_sla_id = intval(mysqli_fetch_assoc($sql)['contract_sla_id']);
+                if ($contract_sla_id > 0) {
+                    $check = mysqli_query($mysqli, "SELECT sla_id FROM slas WHERE sla_id = $contract_sla_id AND sla_archived_at IS NULL LIMIT 1");
+                    if (mysqli_num_rows($check)) {
+                        return $contract_sla_id;
+                    }
                 }
             }
         }

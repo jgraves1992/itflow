@@ -19,8 +19,12 @@ if (isset($_POST['add_contract_template'])) {
     $details = mysqli_escape_string($mysqli, $_POST['details']);
 
     // Numeric fields cast to integer
-    $contract_template_sla_id  = intval($_POST['contract_template_sla_id'] ?? 0);
-    $contract_template_sla_sql = $contract_template_sla_id > 0 ? $contract_template_sla_id : 'NULL';
+    $tmpl_sla_low_id    = intval($_POST['contract_template_sla_low_id']    ?? 0);
+    $tmpl_sla_medium_id = intval($_POST['contract_template_sla_medium_id'] ?? 0);
+    $tmpl_sla_high_id   = intval($_POST['contract_template_sla_high_id']   ?? 0);
+    $tmpl_sla_low_sql    = $tmpl_sla_low_id    > 0 ? $tmpl_sla_low_id    : 'NULL';
+    $tmpl_sla_medium_sql = $tmpl_sla_medium_id > 0 ? $tmpl_sla_medium_id : 'NULL';
+    $tmpl_sla_high_sql   = $tmpl_sla_high_id   > 0 ? $tmpl_sla_high_id   : 'NULL';
     $rate_standard = intval($_POST['rate_standard']);
     $rate_after_hours = intval($_POST['hourly_rate_after_hours']);
     $net_terms = intval($_POST['net_terms']);
@@ -33,7 +37,9 @@ if (isset($_POST['add_contract_template'])) {
         contract_template_details = '$details',
         contract_template_type = '$type',
         contract_template_renewal_frequency = '$renewal_frequency',
-        contract_template_sla_id = $contract_template_sla_sql,
+        contract_template_sla_low_id    = $tmpl_sla_low_sql,
+        contract_template_sla_medium_id = $tmpl_sla_medium_sql,
+        contract_template_sla_high_id   = $tmpl_sla_high_sql,
         contract_template_rate_standard = $rate_standard,
         contract_template_rate_after_hours = $rate_after_hours,
         contract_template_support_hours = '$support_hours',
@@ -63,8 +69,12 @@ if (isset($_POST['edit_contract_template'])) {
     $renewal_frequency= escapeSql($_POST['renewal_frequency']);
     $support_hours   = escapeSql($_POST['support_hours']);
     $details         = mysqli_escape_string($mysqli, $_POST['details']);
-    $contract_template_sla_id  = intval($_POST['contract_template_sla_id'] ?? 0);
-    $contract_template_sla_sql = $contract_template_sla_id > 0 ? $contract_template_sla_id : 'NULL';
+    $tmpl_sla_low_id    = intval($_POST['contract_template_sla_low_id']    ?? 0);
+    $tmpl_sla_medium_id = intval($_POST['contract_template_sla_medium_id'] ?? 0);
+    $tmpl_sla_high_id   = intval($_POST['contract_template_sla_high_id']   ?? 0);
+    $tmpl_sla_low_sql    = $tmpl_sla_low_id    > 0 ? $tmpl_sla_low_id    : 'NULL';
+    $tmpl_sla_medium_sql = $tmpl_sla_medium_id > 0 ? $tmpl_sla_medium_id : 'NULL';
+    $tmpl_sla_high_sql   = $tmpl_sla_high_id   > 0 ? $tmpl_sla_high_id   : 'NULL';
     $rate_standard   = intval($_POST['rate_standard']);
     $rate_after_hours = intval($_POST['rate_after_hours']);
     $net_terms     = intval($_POST['net_terms']);
@@ -76,7 +86,9 @@ if (isset($_POST['edit_contract_template'])) {
             contract_template_details = '$details',
             contract_template_type = '$type',
             contract_template_renewal_frequency = '$renewal_frequency',
-            contract_template_sla_id = $contract_template_sla_sql,
+            contract_template_sla_low_id    = $tmpl_sla_low_sql,
+            contract_template_sla_medium_id = $tmpl_sla_medium_sql,
+            contract_template_sla_high_id   = $tmpl_sla_high_sql,
             contract_template_rate_standard = $rate_standard,
             contract_template_rate_after_hours = $rate_after_hours,
             contract_template_support_hours = '$support_hours',
