@@ -17,6 +17,10 @@ $sql = mysqli_query(
     ORDER BY $sort $order LIMIT $record_from, $record_to"
 );
 
+// Stripe account ID moved from settings to payment_providers in 26.08
+$stripe_provider_row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT payment_provider_account FROM payment_providers LIMIT 1"));
+$config_stripe_account = $stripe_provider_row ? intval($stripe_provider_row['payment_provider_account']) : 0;
+
 $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
 ?>

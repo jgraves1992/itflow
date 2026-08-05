@@ -674,7 +674,8 @@ if (isset($_GET['delete_payment'])) {
     logAudit("Invoice", "Edit", "$session_name deleted Payment on Invoice $invoice_prefix$invoice_number", $client_id, $invoice_id);
 
     flashAlert("Payment deleted", 'error');
-    if ($config_stripe_enable) {
+    $stripe_configured = mysqli_num_rows(mysqli_query($mysqli, "SELECT payment_provider_id FROM payment_providers LIMIT 1")) > 0;
+    if ($stripe_configured) {
        flashAlert("Payment deleted - Stripe payments must be manually refunded in Stripe", 'error');
     }
 

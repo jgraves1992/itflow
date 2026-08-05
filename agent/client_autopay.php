@@ -8,14 +8,24 @@ enforceUserPermission('module_sales');
 // Initialize stripe
 require_once '../includes/stripe_init.php';
 
-// Get Stripe vars
-$stripe_vars = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT config_stripe_enable, config_stripe_publishable, config_stripe_secret FROM settings WHERE company_id = 1"));
-$config_stripe_enable = intval($stripe_vars['config_stripe_enable']);
-$config_stripe_publishable = escapeHtml($stripe_vars['config_stripe_publishable']);
-$config_stripe_secret = escapeHtml($stripe_vars['config_stripe_secret']);
+// Get Stripe vars (moved to payment_providers table in 26.08)
+$stripe_vars = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT payment_provider_active, payment_provider_public_key, payment_provider_private_key FROM payment_providers LIMIT 1"));
+$config_stripe_enable = $stripe_vars ? intval($stripe_vars['payment_provider_active']) : 0;
+$config_stripe_publishable = $stripe_vars ? escapeHtml($stripe_vars['payment_provider_public_key']) : '';
+$config_stripe_secret = $stripe_vars ? escapeHtml($stripe_vars['payment_provider_private_key']) : '';
 
-// Get client's StripeID from database
-$stripe_client_details = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT * FROM client_stripe WHERE client_id = $client_id LIMIT 1"));
+// Get client's Stripe relationship (client_payment_provider) and saved PM (client_saved_payment_methods)
+$stripe_client_details = mysqli_fetch_assoc(mysqli_query($mysqli, "
+    SELECT cpp.payment_provider_client AS stripe_id,
+           spm.saved_payment_provider_method AS stripe_pm
+    FROM client_payment_provider cpp
+    JOIN payment_providers pp ON pp.payment_provider_id = cpp.payment_provider_id
+    LEFT JOIN client_saved_payment_methods spm
+        ON spm.saved_payment_client_id = $client_id
+        AND spm.saved_payment_provider_id = cpp.payment_provider_id
+    WHERE cpp.client_id = $client_id
+    LIMIT 1
+"));
 if ($stripe_client_details) {
     $stripe_id = escapeSql($stripe_client_details['stripe_id']);
     $stripe_pm = escapeSql($stripe_client_details['stripe_pm']);
@@ -46,6 +56,8 @@ if (!$config_stripe_enable || !$config_stripe_publishable || !$config_stripe_sec
 
                 <div class="col-5">
                     <form action="post.php" method="POST">
+                        <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                        <input type="hidden" name="client_id" value="<?= $client_id ?>">
 
                         <div class="form-group">
                             <div class="custom-control custom-checkbox">
@@ -72,8 +84,9 @@ if (!$config_stripe_enable || !$config_stripe_publishable || !$config_stripe_sec
                 By adding payment details here, you grant consent for future automatic payments of invoices.<br><br>
 
                 <input type="hidden" id="stripe_publishable_key" value="<?= $config_stripe_publishable ?>">
+                <input type="hidden" id="autopay_client_id" value="<?= $client_id ?>">
                 <script src="https://js.stripe.com/v3/"></script>
-                <script src="js/autopay_setup_stripe.js"></script>
+                <script src="js/autopay_setup_stripe_agent.js"></script>
                 <div id="checkout">
                     <!-- Checkout will insert the payment form here -->
                 </div>
@@ -115,7 +128,7 @@ if (!$config_stripe_enable || !$config_stripe_publishable || !$config_stripe_sec
 
                 <hr>
                 <b>Actions</b><br>
-                - <a href="post.php?stripe_remove_pm&pm=<?= $stripe_pm ?>">Remove saved payment method</a>
+                - <a href="post.php?stripe_remove_pm&client_id=<?= $client_id ?>&pm=<?= $stripe_pm ?>&csrf_token=<?= $_SESSION['csrf_token'] ?>">Remove saved payment method</a>
 
             <?php } ?>
 

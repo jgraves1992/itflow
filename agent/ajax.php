@@ -483,7 +483,11 @@ if (isset($_GET['get_totp_token_via_id'])) {
 }
 
 if (isset($_GET['get_readable_pass'])) {
-    echo json_encode(GenerateReadablePassword(1));
+    $adjectives = ['brave','calm','dark','epic','fair','glad','idle','just','keen','lush','mild','neat','pure','rare','safe','tall','vast','warm'];
+    $nouns      = ['apple','beach','cloud','dance','earth','flame','grove','image','joker','lemon','music','night','ocean','river','stone','tower','voice','water'];
+    $word = ucfirst($adjectives[random_int(0, count($adjectives) - 1)]) . ucfirst($nouns[random_int(0, count($nouns) - 1)]);
+    $suffix = random_int(10, 99) . ['!','@','#','$','%','&'][random_int(0, 5)];
+    echo json_encode($word . $suffix);
 }
 
 /*
