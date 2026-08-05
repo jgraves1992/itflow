@@ -4,7 +4,7 @@ require_once '../../includes/modal_header.php';
 $contract_template_id = intval($_GET['id']);
 
 $contract_types_array = ['Fully Managed', 'Partialy Managed', 'Break/Fix'];
-$update_frequency_array = ['Manual', 'Annually', '2 Year', '3 Year', '5 Year', '7 Year'];
+$renewal_frequency_array = ['Manual', 'Annually', '2 Year', '3 Year', '5 Year', '7 Year'];
 
 // Fetch existing template
 $sql = mysqli_query($mysqli, "SELECT * FROM contract_templates WHERE contract_template_id = $contract_template_id LIMIT 1");
