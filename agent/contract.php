@@ -47,12 +47,16 @@ $contract_net_terms   = escapeHtml($row['contract_net_terms']);
 $contract_support_hrs = escapeHtml($row['contract_support_hours']);
 $contract_rate_std    = floatval($row['contract_rate_standard']);
 $contract_rate_ah     = floatval($row['contract_rate_after_hours']);
-$sla_low_resp         = escapeHtml($row['contract_sla_low_response_time']);
-$sla_low_res          = escapeHtml($row['contract_sla_low_resolution_time']);
-$sla_med_resp         = escapeHtml($row['contract_sla_medium_response_time']);
-$sla_med_res          = escapeHtml($row['contract_sla_medium_resolution_time']);
-$sla_high_resp        = escapeHtml($row['contract_sla_high_response_time']);
-$sla_high_res         = escapeHtml($row['contract_sla_high_resolution_time']);
+$contract_sla_id      = intval($row['contract_sla_id']);
+// Resolve SLA plan name for display
+$contract_sla_name = null;
+if ($contract_sla_id > 0) {
+    $sla_row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT sla_name, sla_description FROM slas WHERE sla_id = $contract_sla_id LIMIT 1"));
+    if ($sla_row) {
+        $contract_sla_name        = escapeHtml($sla_row['sla_name']);
+        $contract_sla_description = escapeHtml($sla_row['sla_description'] ?? '');
+    }
+}
 $snap_client_name     = escapeHtml($row['contract_client_name']);
 $snap_client_addr     = escapeHtml($row['contract_client_address']);
 $snap_client_email    = escapeHtml($row['contract_client_email']);
@@ -193,35 +197,29 @@ switch ($contract_status) {
     <div class="col-lg-6">
         <div class="card card-outline card-dark">
             <div class="card-header py-2">
-                <h3 class="card-title"><i class="fas fa-fw fa-stopwatch mr-2"></i>SLA Times (hours)</h3>
+                <h3 class="card-title"><i class="fas fa-fw fa-stopwatch mr-2"></i>SLA Plan</h3>
+                <?php if ($contract_sla_id > 0) { ?>
+                    <div class="card-tools">
+                        <a href="/admin/sla.php" class="btn btn-sm btn-secondary" target="_blank">
+                            <i class="fas fa-cog mr-1"></i>Manage SLA Plans
+                        </a>
+                    </div>
+                <?php } ?>
             </div>
             <div class="card-body">
-                <table class="table table-borderless table-sm">
-                    <thead class="text-dark">
-                        <tr>
-                            <th>Priority</th>
-                            <th>Response</th>
-                            <th>Resolution</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><span class="badge badge-success">Low</span></td>
-                            <td><?= $sla_low_resp ?: '-' ?> hrs</td>
-                            <td><?= $sla_low_res ?: '-' ?> hrs</td>
-                        </tr>
-                        <tr>
-                            <td><span class="badge badge-warning text-dark">Medium</span></td>
-                            <td><?= $sla_med_resp ?: '-' ?> hrs</td>
-                            <td><?= $sla_med_res ?: '-' ?> hrs</td>
-                        </tr>
-                        <tr>
-                            <td><span class="badge badge-danger">High</span></td>
-                            <td><?= $sla_high_resp ?: '-' ?> hrs</td>
-                            <td><?= $sla_high_res ?: '-' ?> hrs</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <?php if ($contract_sla_name) { ?>
+                    <p class="mb-1"><strong><?= $contract_sla_name ?></strong></p>
+                    <?php if (!empty($contract_sla_description)) { ?>
+                        <p class="text-muted small mb-0"><?= $contract_sla_description ?></p>
+                    <?php } ?>
+                    <?php if ($contract_status === 'Active') { ?>
+                        <p class="text-success small mt-2 mb-0"><i class="fas fa-check-circle mr-1"></i>This plan is currently enforced for client tickets.</p>
+                    <?php } else { ?>
+                        <p class="text-muted small mt-2 mb-0"><i class="fas fa-info-circle mr-1"></i>Plan will be enforced when contract status is Active.</p>
+                    <?php } ?>
+                <?php } else { ?>
+                    <p class="text-muted mb-0">No SLA plan linked. Standard SLA assignments apply.</p>
+                <?php } ?>
             </div>
         </div>
     </div>

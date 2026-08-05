@@ -257,65 +257,31 @@ ob_start();
 
             <!-- SLA Tab -->
             <div class="tab-pane fade" id="ct-sla">
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label>Low Priority Response (hrs)</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fa fa-fw fa-clock"></i></span>
-                            </div>
-                            <input type="number" class="form-control" name="sla_low_response_time" id="slaLowResp" placeholder="e.g. 24" min="0">
+                <?php
+                $sql_slas = mysqli_query($mysqli, "SELECT sla_id, sla_name, sla_description FROM slas WHERE sla_archived_at IS NULL ORDER BY sla_name ASC");
+                $slas_list = [];
+                while ($s = mysqli_fetch_assoc($sql_slas)) { $slas_list[] = $s; }
+                ?>
+                <div class="form-group">
+                    <label>SLA Plan</label>
+                    <p class="text-muted small mb-2">The selected plan applies to all tickets for this client while the contract is Active, overriding standard SLA assignments.</p>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fa fa-fw fa-stopwatch"></i></span>
                         </div>
+                        <select class="form-control select2" name="contract_sla_id" id="contractSlaId">
+                            <option value="0">- None -</option>
+                            <?php foreach ($slas_list as $sla) { ?>
+                                <option value="<?= intval($sla['sla_id']) ?>">
+                                    <?= escapeHtml($sla['sla_name']) ?>
+                                    <?= $sla['sla_description'] ? ' — ' . escapeHtml($sla['sla_description']) : '' ?>
+                                </option>
+                            <?php } ?>
+                        </select>
                     </div>
-                    <div class="form-group col-md-6">
-                        <label>Low Priority Resolution (hrs)</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fa fa-fw fa-hourglass-half"></i></span>
-                            </div>
-                            <input type="number" class="form-control" name="sla_low_resolution_time" id="slaLowRes" placeholder="e.g. 48" min="0">
-                        </div>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label>Medium Priority Response (hrs)</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fa fa-fw fa-clock"></i></span>
-                            </div>
-                            <input type="number" class="form-control" name="sla_medium_response_time" id="slaMedResp" placeholder="e.g. 8" min="0">
-                        </div>
-                    </div>
-                    <div class="form-group col-md-6">
-                        <label>Medium Priority Resolution (hrs)</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fa fa-fw fa-hourglass-half"></i></span>
-                            </div>
-                            <input type="number" class="form-control" name="sla_medium_resolution_time" id="slaMedRes" placeholder="e.g. 24" min="0">
-                        </div>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label>High Priority Response (hrs)</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fa fa-fw fa-bolt"></i></span>
-                            </div>
-                            <input type="number" class="form-control" name="sla_high_response_time" id="slaHighResp" placeholder="e.g. 1" min="0">
-                        </div>
-                    </div>
-                    <div class="form-group col-md-6">
-                        <label>High Priority Resolution (hrs)</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fa fa-fw fa-stopwatch"></i></span>
-                            </div>
-                            <input type="number" class="form-control" name="sla_high_resolution_time" id="slaHighRes" placeholder="e.g. 4" min="0">
-                        </div>
-                    </div>
+                    <?php if (empty($slas_list)) { ?>
+                        <p class="text-muted small mt-2"><i class="fas fa-info-circle mr-1"></i>No SLA plans configured. <a href="/admin/sla.php" target="_blank">Create one in Admin → SLA</a>.</p>
+                    <?php } ?>
                 </div>
             </div>
 
@@ -398,13 +364,11 @@ $(document).on('change', '#contractTemplateSelect', function() {
         $('#contractRenewalField').val(d.contract_template_renewal_frequency).trigger('change');
     }
 
+    if (d.contract_template_sla_id) {
+        $('#contractSlaId').val(d.contract_template_sla_id).trigger('change');
+    }
+
     var fields = {
-        slaLowResp:   d.contract_template_sla_low_response_time,
-        slaLowRes:    d.contract_template_sla_low_resolution_time,
-        slaMedResp:   d.contract_template_sla_medium_response_time,
-        slaMedRes:    d.contract_template_sla_medium_resolution_time,
-        slaHighResp:  d.contract_template_sla_high_response_time,
-        slaHighRes:   d.contract_template_sla_high_resolution_time,
         rateStd:      d.contract_template_rate_standard,
         rateAH:       d.contract_template_rate_after_hours,
         netTerms:     d.contract_template_net_terms,

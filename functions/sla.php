@@ -320,6 +320,28 @@ function getTicketSlaId($client_id, $priority)
 
     $sla_id = null;
 
+    // Active contract with a linked SLA plan takes highest priority
+    if ($client_id > 0) {
+        $sql = mysqli_query($mysqli, "
+            SELECT contract_sla_id FROM contracts
+            WHERE contract_client_id = $client_id
+              AND contract_status = 'Active'
+              AND contract_sla_id IS NOT NULL
+              AND contract_archived_at IS NULL
+            ORDER BY contract_id DESC
+            LIMIT 1
+        ");
+        if (mysqli_num_rows($sql)) {
+            $contract_sla_id = intval(mysqli_fetch_assoc($sql)['contract_sla_id']);
+            if ($contract_sla_id > 0) {
+                $check = mysqli_query($mysqli, "SELECT sla_id FROM slas WHERE sla_id = $contract_sla_id AND sla_archived_at IS NULL LIMIT 1");
+                if (mysqli_num_rows($check)) {
+                    return $contract_sla_id;
+                }
+            }
+        }
+    }
+
     // Client-level assignment wins; a row pointing at SLA 0 is an explicit
     // "no SLA for this client/priority" override of the global default
     if ($client_id > 0) {

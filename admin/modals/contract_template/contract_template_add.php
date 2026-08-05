@@ -91,67 +91,31 @@ ob_start();
 
             <!-- SLA Tab -->
             <div class="tab-pane fade" id="sla" role="tabpanel">
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label>Low Priority Response (hrs)</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fa fa-fw fa-clock"></i></span>
-                            </div>
-                            <input type="number" class="form-control" name="sla_low_response_time" placeholder="e.g., 24">
+                <?php
+                $sql_slas_ta = mysqli_query($mysqli, "SELECT sla_id, sla_name, sla_description FROM slas WHERE sla_archived_at IS NULL ORDER BY sla_name ASC");
+                $slas_list_ta = [];
+                while ($s = mysqli_fetch_assoc($sql_slas_ta)) { $slas_list_ta[] = $s; }
+                ?>
+                <div class="form-group">
+                    <label>SLA Plan</label>
+                    <p class="text-muted small mb-2">When a contract using this template is Active, the selected plan overrides standard SLA assignments for the client's tickets.</p>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fa fa-fw fa-stopwatch"></i></span>
                         </div>
+                        <select class="form-control select2" name="contract_template_sla_id">
+                            <option value="0">- None -</option>
+                            <?php foreach ($slas_list_ta as $sla) { ?>
+                                <option value="<?= intval($sla['sla_id']) ?>">
+                                    <?= escapeHtml($sla['sla_name']) ?>
+                                    <?= $sla['sla_description'] ? ' — ' . escapeHtml($sla['sla_description']) : '' ?>
+                                </option>
+                            <?php } ?>
+                        </select>
                     </div>
-                    <div class="form-group col-md-6">
-                        <label>Low Priority Resolution (hrs)</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fa fa-fw fa-hourglass-half"></i></span>
-                            </div>
-                            <input type="number" class="form-control" name="sla_low_resolution_time" placeholder="e.g., 48">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label>Medium Priority Response (hrs)</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fa fa-fw fa-clock"></i></span>
-                            </div>
-                            <input type="number" class="form-control" name="sla_medium_response_time" placeholder="e.g., 12">
-                        </div>
-                    </div>
-                    <div class="form-group col-md-6">
-                        <label>Medium Priority Resolution (hrs)</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fa fa-fw fa-hourglass-half"></i></span>
-                            </div>
-                            <input type="number" class="form-control" name="sla_medium_resolution_time" placeholder="e.g., 24">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label>High Priority Response (hrs)</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fa fa-fw fa-bolt"></i></span>
-                            </div>
-                            <input type="number" class="form-control" name="sla_high_response_time" placeholder="e.g., 1">
-                        </div>
-                    </div>
-                    <div class="form-group col-md-6">
-                        <label>High Priority Resolution (hrs)</label>
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fa fa-fw fa-stopwatch"></i></span>
-                            </div>
-                            <input type="number" class="form-control" name="sla_high_resolution_time" placeholder="e.g., 4">
-                        </div>
-                    </div>
+                    <?php if (empty($slas_list_ta)) { ?>
+                        <p class="text-muted small mt-2"><i class="fas fa-info-circle mr-1"></i>No SLA plans configured. <a href="/admin/sla.php">Create one in Admin → SLA</a>.</p>
+                    <?php } ?>
                 </div>
             </div>
 

@@ -27,12 +27,8 @@ if (isset($_POST['add_contract'])) {
     $net_terms          = escapeSql($_POST['contract_net_terms']);
     $support_hours      = escapeSql($_POST['contract_support_hours']);
     $details            = mysqli_escape_string($mysqli, $_POST['contract_details'] ?? '');
-    $sla_low_resp       = intval($_POST['sla_low_response_time']);
-    $sla_low_res        = intval($_POST['sla_low_resolution_time']);
-    $sla_med_resp       = intval($_POST['sla_medium_response_time']);
-    $sla_med_res        = intval($_POST['sla_medium_resolution_time']);
-    $sla_high_resp      = intval($_POST['sla_high_response_time']);
-    $sla_high_res       = intval($_POST['sla_high_resolution_time']);
+    $contract_sla_id    = intval($_POST['contract_sla_id'] ?? 0);
+    $contract_sla_sql   = $contract_sla_id > 0 ? $contract_sla_id : 'NULL';
     $rate_standard      = floatval($_POST['contract_rate_standard']);
     $rate_after_hours   = floatval($_POST['contract_rate_after_hours']);
 
@@ -81,12 +77,7 @@ if (isset($_POST['add_contract'])) {
         contract_client_phone           = '$client_phone_snap',
         contract_contact_name           = '$contact_name',
         contract_agent_name             = '$agent_name',
-        contract_sla_low_response_time  = $sla_low_resp,
-        contract_sla_low_resolution_time = $sla_low_res,
-        contract_sla_medium_response_time = $sla_med_resp,
-        contract_sla_medium_resolution_time = $sla_med_res,
-        contract_sla_high_response_time = $sla_high_resp,
-        contract_sla_high_resolution_time = $sla_high_res,
+        contract_sla_id                 = $contract_sla_sql,
         contract_rate_standard          = $rate_standard,
         contract_rate_after_hours       = $rate_after_hours,
         contract_net_terms              = '$net_terms',
@@ -126,12 +117,8 @@ if (isset($_POST['edit_contract'])) {
     $net_terms          = escapeSql($_POST['contract_net_terms']);
     $support_hours      = escapeSql($_POST['contract_support_hours']);
     $details            = mysqli_escape_string($mysqli, $_POST['contract_details'] ?? '');
-    $sla_low_resp       = intval($_POST['sla_low_response_time']);
-    $sla_low_res        = intval($_POST['sla_low_resolution_time']);
-    $sla_med_resp       = intval($_POST['sla_medium_response_time']);
-    $sla_med_res        = intval($_POST['sla_medium_resolution_time']);
-    $sla_high_resp      = intval($_POST['sla_high_response_time']);
-    $sla_high_res       = intval($_POST['sla_high_resolution_time']);
+    $contract_sla_id    = intval($_POST['contract_sla_id'] ?? 0);
+    $contract_sla_sql   = $contract_sla_id > 0 ? $contract_sla_id : 'NULL';
     $rate_standard      = floatval($_POST['contract_rate_standard']);
     $rate_after_hours   = floatval($_POST['contract_rate_after_hours']);
 
@@ -154,12 +141,7 @@ if (isset($_POST['edit_contract'])) {
         contract_client_phone             = '$client_phone_snap',
         contract_contact_name             = '$contact_name',
         contract_agent_name               = '$agent_name',
-        contract_sla_low_response_time    = $sla_low_resp,
-        contract_sla_low_resolution_time  = $sla_low_res,
-        contract_sla_medium_response_time = $sla_med_resp,
-        contract_sla_medium_resolution_time = $sla_med_res,
-        contract_sla_high_response_time   = $sla_high_resp,
-        contract_sla_high_resolution_time = $sla_high_res,
+        contract_sla_id                   = $contract_sla_sql,
         contract_rate_standard            = $rate_standard,
         contract_rate_after_hours         = $rate_after_hours,
         contract_net_terms                = '$net_terms',

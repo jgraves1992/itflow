@@ -19,12 +19,8 @@ if (isset($_POST['add_contract_template'])) {
     $details = mysqli_escape_string($mysqli, $_POST['details']);
 
     // Numeric fields cast to integer
-    $sla_low_resp = intval($_POST['sla_low_response_time']);
-    $sla_med_resp = intval($_POST['sla_medium_response_time']);
-    $sla_high_resp = intval($_POST['sla_high_response_time']);
-    $sla_low_res = intval($_POST['sla_low_resolution_time']);
-    $sla_med_res = intval($_POST['sla_medium_resolution_time']);
-    $sla_high_res = intval($_POST['sla_high_resolution_time']);
+    $contract_template_sla_id  = intval($_POST['contract_template_sla_id'] ?? 0);
+    $contract_template_sla_sql = $contract_template_sla_id > 0 ? $contract_template_sla_id : 'NULL';
     $rate_standard = intval($_POST['rate_standard']);
     $rate_after_hours = intval($_POST['hourly_rate_after_hours']);
     $net_terms = intval($_POST['net_terms']);
@@ -37,12 +33,7 @@ if (isset($_POST['add_contract_template'])) {
         contract_template_details = '$details',
         contract_template_type = '$type',
         contract_template_renewal_frequency = '$renewal_frequency',
-        contract_template_sla_low_response_time = $sla_low_resp,
-        contract_template_sla_medium_response_time = $sla_med_resp,
-        contract_template_sla_high_response_time = $sla_high_resp,
-        contract_template_sla_low_resolution_time = $sla_low_res,
-        contract_template_sla_medium_resolution_time = $sla_med_res,
-        contract_template_sla_high_resolution_time = $sla_high_res,
+        contract_template_sla_id = $contract_template_sla_sql,
         contract_template_rate_standard = $rate_standard,
         contract_template_rate_after_hours = $rate_after_hours,
         contract_template_support_hours = '$support_hours',
@@ -72,12 +63,8 @@ if (isset($_POST['edit_contract_template'])) {
     $renewal_frequency= escapeSql($_POST['renewal_frequency']);
     $support_hours   = escapeSql($_POST['support_hours']);
     $details         = mysqli_escape_string($mysqli, $_POST['details']);
-    $sla_low_resp  = intval($_POST['sla_low_response_time']);
-    $sla_med_resp  = intval($_POST['sla_medium_response_time']);
-    $sla_high_resp = intval($_POST['sla_high_response_time']);
-    $sla_low_res   = intval($_POST['sla_low_resolution_time']);
-    $sla_med_res   = intval($_POST['sla_medium_resolution_time']);
-    $sla_high_res  = intval($_POST['sla_high_resolution_time']);
+    $contract_template_sla_id  = intval($_POST['contract_template_sla_id'] ?? 0);
+    $contract_template_sla_sql = $contract_template_sla_id > 0 ? $contract_template_sla_id : 'NULL';
     $rate_standard   = intval($_POST['rate_standard']);
     $rate_after_hours = intval($_POST['rate_after_hours']);
     $net_terms     = intval($_POST['net_terms']);
@@ -89,12 +76,7 @@ if (isset($_POST['edit_contract_template'])) {
             contract_template_details = '$details',
             contract_template_type = '$type',
             contract_template_renewal_frequency = '$renewal_frequency',
-            contract_template_sla_low_response_time = $sla_low_resp,
-            contract_template_sla_medium_response_time = $sla_med_resp,
-            contract_template_sla_high_response_time = $sla_high_resp,
-            contract_template_sla_low_resolution_time = $sla_low_res,
-            contract_template_sla_medium_resolution_time = $sla_med_res,
-            contract_template_sla_high_resolution_time = $sla_high_res,
+            contract_template_sla_id = $contract_template_sla_sql,
             contract_template_rate_standard = $rate_standard,
             contract_template_rate_after_hours = $rate_after_hours,
             contract_template_support_hours = '$support_hours',
