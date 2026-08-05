@@ -119,11 +119,25 @@ if ($stripe_client_details && !empty($stripe_id) && empty($stripe_pm)) {
                 <?php if ($checkout_error) { ?>
                     <div class="alert alert-danger">Could not initialize payment setup: <?= $checkout_error ?></div>
                 <?php } elseif ($checkout_client_secret) { ?>
-                    <input type="hidden" id="stripe_publishable_key" value="<?= $config_stripe_publishable ?>">
                     <div id="checkout"><p class="text-muted"><i class="fas fa-spinner fa-spin"></i> Loading payment form...</p></div>
-                    <script>window.stripeCheckoutClientSecret = <?= json_encode($checkout_client_secret) ?>;</script>
                     <script src="https://js.stripe.com/v3/"></script>
-                    <script src="js/autopay_setup_stripe_agent.js"></script>
+                    <script>
+                    (async function() {
+                        try {
+                            const stripe = Stripe(<?= json_encode($config_stripe_publishable) ?>);
+                            const checkout = await stripe.initEmbeddedCheckout({
+                                fetchClientSecret: async () => <?= json_encode($checkout_client_secret) ?>,
+                            });
+                            checkout.mount('#checkout');
+                        } catch (err) {
+                            console.error('Stripe initEmbeddedCheckout error:', err);
+                            const div = document.getElementById('checkout');
+                            if (div) {
+                                div.innerHTML = '<div class="alert alert-danger">Stripe checkout error: ' + (err.message || String(err)) + '</div>';
+                            }
+                        }
+                    })();
+                    </script>
                 <?php } else { ?>
                     <div class="alert alert-danger">Payment setup unavailable. Please check Stripe configuration in Admin &rarr; Payment Providers.</div>
                 <?php } ?>
