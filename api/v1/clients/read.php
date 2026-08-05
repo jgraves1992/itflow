@@ -9,7 +9,7 @@ if (isset($_GET['client_name'])) {
     $name = mysqli_real_escape_string($mysqli, $_GET['client_name']);
     $sql = mysqli_query($mysqli, "SELECT * FROM clients WHERE client_name = '$name' AND 1=1 " . apiClientScopeSql('client_id') . "");
 
-} elseif (!empty($client_id)) {
+} elseif ($client_id > 0) {
     // Specific client via ID (single)
     $sql = mysqli_query($mysqli, "SELECT * FROM clients WHERE client_id = $client_id AND 1=1 " . apiClientScopeSql('client_id') . " LIMIT 1");
 
