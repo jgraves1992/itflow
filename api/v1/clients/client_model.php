@@ -77,7 +77,7 @@ if (isset($_POST['client_abbreviation'])) {
 if (isset($_POST['client_is_lead'])) {
     $lead = intval($_POST['client_is_lead']);
 } elseif ($client_row) {
-    $lead = $client_row['client_is_lead'];
+    $lead = $client_row['client_lead'];
 } else {
     $lead = 0; // Default: Not a lead
 }
