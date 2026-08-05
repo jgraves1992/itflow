@@ -60,9 +60,12 @@ if ($stripe_client_details && !empty($stripe_id) && empty($stripe_pm)) {
             'payment_method_types' => ['card', 'us_bank_account'],
             'customer'             => $stripe_id,
         ]);
-        $checkout_client_secret = $checkout_session->client_secret;
+        $checkout_client_secret = $checkout_session->client_secret ?? null;
+        if (!$checkout_client_secret) {
+            $checkout_error = "Stripe session created but no client_secret returned (ui_mode may not support embedded checkout).";
+        }
 
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
         error_log("Stripe error creating agent checkout session for client $client_id: " . $e->getMessage());
         $checkout_error = escapeHtml($e->getMessage());
     }
@@ -117,10 +120,10 @@ if ($stripe_client_details && !empty($stripe_id) && empty($stripe_pm)) {
                     <div class="alert alert-danger">Could not initialize payment setup: <?= $checkout_error ?></div>
                 <?php } elseif ($checkout_client_secret) { ?>
                     <input type="hidden" id="stripe_publishable_key" value="<?= $config_stripe_publishable ?>">
-                    <script>const stripeCheckoutClientSecret = <?= json_encode($checkout_client_secret) ?>;</script>
+                    <div id="checkout"><p class="text-muted"><i class="fas fa-spinner fa-spin"></i> Loading payment form...</p></div>
+                    <script>window.stripeCheckoutClientSecret = <?= json_encode($checkout_client_secret) ?>;</script>
                     <script src="https://js.stripe.com/v3/"></script>
                     <script src="js/autopay_setup_stripe_agent.js"></script>
-                    <div id="checkout"></div>
                 <?php } else { ?>
                     <div class="alert alert-danger">Payment setup unavailable. Please check Stripe configuration in Admin &rarr; Payment Providers.</div>
                 <?php } ?>
