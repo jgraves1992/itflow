@@ -3,6 +3,8 @@
 // Role check failed wording
 DEFINE("WORDING_ROLECHECK_FAILED", "You are not permitted to do that!");
 
+require_once __DIR__ . '/functions/custom.php';
+
 // Function to generate both crypto & URL safe random strings
 function randomString(int $length = 16): string {
     $bytes = random_bytes((int) ceil($length * 3 / 4));
