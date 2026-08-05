@@ -50,9 +50,7 @@ if ($stripe_client_details && !empty($stripe_id) && empty($stripe_pm)) {
         $client_currency_row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT client_currency_code FROM clients WHERE client_id = $client_id LIMIT 1"));
         $client_currency     = strtolower($client_currency_row['client_currency_code'] ?? 'usd');
 
-        $company_row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT company_base_url FROM companies WHERE company_id = 1"));
-        $base_url    = $company_row['company_base_url'] ?? '';
-        $return_url  = "https://$base_url/agent/post.php?stripe_save_card&client_id=$client_id&session_id={CHECKOUT_SESSION_ID}";
+        $return_url = "https://$config_base_url/agent/post.php?stripe_save_card&client_id=$client_id&session_id={CHECKOUT_SESSION_ID}";
 
         $checkout_session       = $stripe_obj->checkout->sessions->create([
             'currency'             => $client_currency,
