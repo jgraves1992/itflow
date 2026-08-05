@@ -102,6 +102,7 @@ ob_start();
                     ['low',    'Low',    'badge-success'],
                     ['medium', 'Medium', 'badge-warning text-dark'],
                     ['high',   'High',   'badge-danger'],
+                    ['urgent', 'Urgent', 'badge-dark'],
                 ] as [$key, $label, $badge]) {
                 ?>
                 <div class="form-group">

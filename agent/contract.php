@@ -50,10 +50,11 @@ $contract_rate_ah     = floatval($row['contract_rate_after_hours']);
 $contract_sla_low_id    = intval($row['contract_sla_low_id']);
 $contract_sla_medium_id = intval($row['contract_sla_medium_id']);
 $contract_sla_high_id   = intval($row['contract_sla_high_id']);
+$contract_sla_urgent_id = intval($row['contract_sla_urgent_id']);
 
 // Resolve SLA plan names for display
-$contract_sla_names = ['low' => null, 'medium' => null, 'high' => null];
-foreach (['low' => $contract_sla_low_id, 'medium' => $contract_sla_medium_id, 'high' => $contract_sla_high_id] as $p => $sid) {
+$contract_sla_names = ['low' => null, 'medium' => null, 'high' => null, 'urgent' => null];
+foreach (['low' => $contract_sla_low_id, 'medium' => $contract_sla_medium_id, 'high' => $contract_sla_high_id, 'urgent' => $contract_sla_urgent_id] as $p => $sid) {
     if ($sid > 0) {
         $sla_r = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT sla_name FROM slas WHERE sla_id = $sid LIMIT 1"));
         if ($sla_r) { $contract_sla_names[$p] = escapeHtml($sla_r['sla_name']); }
@@ -211,10 +212,11 @@ switch ($contract_status) {
                     </thead>
                     <tbody>
                         <?php foreach ([
-                            ['low',    'Low',    'badge-success',           $contract_sla_names['low']],
-                            ['medium', 'Medium', 'badge-warning text-dark', $contract_sla_names['medium']],
-                            ['high',   'High',   'badge-danger',            $contract_sla_names['high']],
-                        ] as [, $label, $badge, $sla_name]) { ?>
+                            ['Low',    'badge-success',           $contract_sla_names['low']],
+                            ['Medium', 'badge-warning text-dark', $contract_sla_names['medium']],
+                            ['High',   'badge-danger',            $contract_sla_names['high']],
+                            ['Urgent', 'badge-dark',              $contract_sla_names['urgent']],
+                        ] as [$label, $badge, $sla_name]) { ?>
                         <tr>
                             <td class="pl-3"><span class="badge <?= $badge ?>"><?= $label ?></span></td>
                             <td><?= $sla_name ?? '<span class="text-muted">— None —</span>' ?></td>
@@ -222,7 +224,7 @@ switch ($contract_status) {
                         <?php } ?>
                     </tbody>
                 </table>
-                <?php $any_sla = $contract_sla_low_id || $contract_sla_medium_id || $contract_sla_high_id; ?>
+                <?php $any_sla = $contract_sla_low_id || $contract_sla_medium_id || $contract_sla_high_id || $contract_sla_urgent_id; ?>
                 <?php if ($any_sla && $contract_status === 'Active') { ?>
                     <p class="text-success small px-3 pb-2 mb-0"><i class="fas fa-check-circle mr-1"></i>Active — overriding standard SLA assignments for this client's tickets.</p>
                 <?php } elseif ($any_sla) { ?>

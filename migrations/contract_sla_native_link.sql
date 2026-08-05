@@ -6,6 +6,7 @@
 ALTER TABLE contracts ADD COLUMN IF NOT EXISTS contract_sla_low_id    INT(11) DEFAULT NULL;
 ALTER TABLE contracts ADD COLUMN IF NOT EXISTS contract_sla_medium_id INT(11) DEFAULT NULL;
 ALTER TABLE contracts ADD COLUMN IF NOT EXISTS contract_sla_high_id   INT(11) DEFAULT NULL;
+ALTER TABLE contracts ADD COLUMN IF NOT EXISTS contract_sla_urgent_id INT(11) DEFAULT NULL;
 
 -- contracts: drop single-sla column if added by a previous version of this migration
 ALTER TABLE contracts DROP COLUMN IF EXISTS contract_sla_id;
@@ -22,6 +23,7 @@ ALTER TABLE contracts DROP COLUMN IF EXISTS contract_sla_high_resolution_time;
 ALTER TABLE contract_templates ADD COLUMN IF NOT EXISTS contract_template_sla_low_id    INT(11) DEFAULT NULL;
 ALTER TABLE contract_templates ADD COLUMN IF NOT EXISTS contract_template_sla_medium_id INT(11) DEFAULT NULL;
 ALTER TABLE contract_templates ADD COLUMN IF NOT EXISTS contract_template_sla_high_id   INT(11) DEFAULT NULL;
+ALTER TABLE contract_templates ADD COLUMN IF NOT EXISTS contract_template_sla_urgent_id INT(11) DEFAULT NULL;
 
 -- contract_templates: drop single-sla column if added by a previous version of this migration
 ALTER TABLE contract_templates DROP COLUMN IF EXISTS contract_template_sla_id;

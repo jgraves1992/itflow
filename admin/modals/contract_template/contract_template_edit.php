@@ -19,6 +19,7 @@ $current_template_sla_ids = [
     'low'    => intval($row['contract_template_sla_low_id']),
     'medium' => intval($row['contract_template_sla_medium_id']),
     'high'   => intval($row['contract_template_sla_high_id']),
+    'urgent' => intval($row['contract_template_sla_urgent_id']),
 ];
 $hourly_rate   = intval($row['contract_template_rate_standard']);
 $after_hours   = intval($row['contract_template_rate_after_hours']);
@@ -127,6 +128,7 @@ ob_start();
                     ['low',    'Low',    'badge-success'],
                     ['medium', 'Medium', 'badge-warning text-dark'],
                     ['high',   'High',   'badge-danger'],
+                    ['urgent', 'Urgent', 'badge-dark'],
                 ] as [$key, $label, $badge]) {
                     $current = $current_template_sla_ids[$key];
                 ?>

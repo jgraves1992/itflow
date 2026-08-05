@@ -268,6 +268,7 @@ ob_start();
                     ['low',    'Low',    'badge-success',           'contractSlaLowId'],
                     ['medium', 'Medium', 'badge-warning text-dark', 'contractSlaMediumId'],
                     ['high',   'High',   'badge-danger',            'contractSlaHighId'],
+                    ['urgent', 'Urgent', 'badge-dark',              'contractSlaUrgentId'],
                 ];
                 foreach ($sla_priorities as [$key, $label, $badge, $elId]) {
                 ?>
@@ -377,6 +378,7 @@ $(document).on('change', '#contractTemplateSelect', function() {
         contractSlaLowId:    d.contract_template_sla_low_id,
         contractSlaMediumId: d.contract_template_sla_medium_id,
         contractSlaHighId:   d.contract_template_sla_high_id,
+        contractSlaUrgentId: d.contract_template_sla_urgent_id,
     };
     $.each(slaMap, function(elId, val) {
         if (val) { $('#' + elId).val(val).trigger('change'); }

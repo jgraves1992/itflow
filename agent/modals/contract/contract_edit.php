@@ -207,6 +207,7 @@ ob_start();
                     'low'    => intval($row['contract_sla_low_id']),
                     'medium' => intval($row['contract_sla_medium_id']),
                     'high'   => intval($row['contract_sla_high_id']),
+                    'urgent' => intval($row['contract_sla_urgent_id']),
                 ];
                 ?>
                 <p class="text-muted small mb-3">Link a native SLA plan per priority. While this contract is Active these override standard SLA assignments for the client's tickets.</p>
@@ -215,6 +216,7 @@ ob_start();
                     ['low',    'Low',    'badge-success'],
                     ['medium', 'Medium', 'badge-warning text-dark'],
                     ['high',   'High',   'badge-danger'],
+                    ['urgent', 'Urgent', 'badge-dark'],
                 ];
                 foreach ($sla_priorities_edit as [$key, $label, $badge]) {
                     $current = $current_sla_ids[$key];

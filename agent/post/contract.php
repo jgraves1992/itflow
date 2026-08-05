@@ -30,9 +30,11 @@ if (isset($_POST['add_contract'])) {
     $sla_low_id         = intval($_POST['contract_sla_low_id']    ?? 0);
     $sla_medium_id      = intval($_POST['contract_sla_medium_id'] ?? 0);
     $sla_high_id        = intval($_POST['contract_sla_high_id']   ?? 0);
+    $sla_urgent_id      = intval($_POST['contract_sla_urgent_id'] ?? 0);
     $sla_low_sql        = $sla_low_id    > 0 ? $sla_low_id    : 'NULL';
     $sla_medium_sql     = $sla_medium_id > 0 ? $sla_medium_id : 'NULL';
     $sla_high_sql       = $sla_high_id   > 0 ? $sla_high_id   : 'NULL';
+    $sla_urgent_sql     = $sla_urgent_id > 0 ? $sla_urgent_id : 'NULL';
     $rate_standard      = floatval($_POST['contract_rate_standard']);
     $rate_after_hours   = floatval($_POST['contract_rate_after_hours']);
 
@@ -84,6 +86,7 @@ if (isset($_POST['add_contract'])) {
         contract_sla_low_id             = $sla_low_sql,
         contract_sla_medium_id          = $sla_medium_sql,
         contract_sla_high_id            = $sla_high_sql,
+        contract_sla_urgent_id          = $sla_urgent_sql,
         contract_rate_standard          = $rate_standard,
         contract_rate_after_hours       = $rate_after_hours,
         contract_net_terms              = '$net_terms',
@@ -126,9 +129,11 @@ if (isset($_POST['edit_contract'])) {
     $sla_low_id         = intval($_POST['contract_sla_low_id']    ?? 0);
     $sla_medium_id      = intval($_POST['contract_sla_medium_id'] ?? 0);
     $sla_high_id        = intval($_POST['contract_sla_high_id']   ?? 0);
+    $sla_urgent_id      = intval($_POST['contract_sla_urgent_id'] ?? 0);
     $sla_low_sql        = $sla_low_id    > 0 ? $sla_low_id    : 'NULL';
     $sla_medium_sql     = $sla_medium_id > 0 ? $sla_medium_id : 'NULL';
     $sla_high_sql       = $sla_high_id   > 0 ? $sla_high_id   : 'NULL';
+    $sla_urgent_sql     = $sla_urgent_id > 0 ? $sla_urgent_id : 'NULL';
     $rate_standard      = floatval($_POST['contract_rate_standard']);
     $rate_after_hours   = floatval($_POST['contract_rate_after_hours']);
 

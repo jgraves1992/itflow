@@ -117,18 +117,23 @@
                     <li class="nav-item">
                         <a href="/admin/project_templates.php" class="nav-link <?= (in_array(basename($_SERVER['PHP_SELF']), ['project_templates.php', 'project_template.php']) ? 'active' : '') ?>">
                             <i class="nav-icon fas fa-project-diagram"></i>
-                            <p>Project Templates</p>
+                            <p>
+                                <span href="#" class="fas fa-plus-circle right ajax-modal" data-modal-url="/admin/modals/project_template/project_template_add.php"></span>
+                                Project Templates
+                            </p>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="/admin/ticket_templates.php" class="nav-link <?= (in_array(basename($_SERVER['PHP_SELF']), ['ticket_templates.php', 'ticket_template.php']) ? 'active' : '') ?>">
                             <i class="nav-icon fas fa-life-ring"></i>
-                            <p>Ticket Templates</p>
+                            <p>
+                                <span href="#" class="fas fa-plus-circle right ajax-modal" data-modal-url="/admin/modals/ticket_template/ticket_template_add.php" data-modal-size="lg"></span>
+                                Ticket Templates
+                            </p>
                         </a>
                     </li>
                 <?php } ?>
                 <?php if ($config_module_enable_itdoc) { ?>
-                    <!-- 2025-11-16 JQ - Hide Contracts not yet ready
                     <li class="nav-item">
                         <a href="/admin/contract_templates.php" class="nav-link <?= (basename($_SERVER['PHP_SELF']) == 'contract_templates.php' ? 'active' : '') ?>">
                             <i class="nav-icon fas fa-file-contract"></i>
@@ -138,23 +143,31 @@
                             </p>
                         </a>
                     </li>
-                    -->
                     <li class="nav-item">
                         <a href="/admin/vendor_templates.php" class="nav-link <?= (basename($_SERVER['PHP_SELF']) == 'vendor_templates.php' ? 'active' : '') ?>">
                             <i class="nav-icon fas fa-building"></i>
-                            <p>Vendor Templates</p>
+                            <p>
+                                <span href="#" class="fas fa-plus-circle right ajax-modal" data-modal-url="/admin/modals/vendor_template/vendor_template_add.php"></span>
+                                Vendor Templates
+                            </p>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="/admin/software_templates.php" class="nav-link <?= (basename($_SERVER['PHP_SELF']) == 'software_templates.php' ? 'active' : '') ?>">
                             <i class="nav-icon fas fa-box-open"></i>
-                            <p>License Templates</p>
+                            <p>
+                                <span href="#" class="fas fa-plus-circle right ajax-modal" data-modal-url="/admin/modals/software_template/software_template_add.php"></span>
+                                License Templates
+                            </p>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="/admin/document_templates.php" class="nav-link <?= (in_array(basename($_SERVER['PHP_SELF']), ['document_templates.php', 'document_template.php']) ? 'active' : '') ?>">
                             <i class="nav-icon fas fa-file-alt"></i>
-                            <p>Document Templates</p>
+                            <p>
+                                <span href="#" class="fas fa-plus-circle right ajax-modal" data-modal-url="/admin/modals/document_template/document_template_add.php" data-modal-size="xl"></span>
+                                Document Templates
+                            </p>
                         </a>
                     </li>
                 <?php } ?>

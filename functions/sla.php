@@ -328,6 +328,8 @@ function getTicketSlaId($client_id, $priority)
             $priority_col = 'contract_sla_medium_id';
         } elseif ($priority === 'High') {
             $priority_col = 'contract_sla_high_id';
+        } elseif ($priority === 'Urgent') {
+            $priority_col = 'contract_sla_urgent_id';
         } else {
             $priority_col = null;
         }
