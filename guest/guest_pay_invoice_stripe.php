@@ -243,7 +243,7 @@ if (isset($_GET['invoice_id'], $_GET['url_key']) && !isset($_GET['payment_intent
     }
 
     // Add Payment to History — ACH payments are optimistically marked Paid; funds settle within 4 business days
-    $payment_method_label = $pi_is_ach ? 'Stripe ACH (Pending)' : 'Stripe';
+    $payment_method_label = 'Stripe';
     mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $stripe_account, payment_method = '$payment_method_label', payment_reference = 'Stripe - $pi_id', payment_invoice_id = $invoice_id");
     mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Paid', history_description = 'Online Payment added (client) - $ip - $os - $browser', history_invoice_id = $invoice_id");
 

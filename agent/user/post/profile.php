@@ -28,7 +28,7 @@ if (isset($_POST['edit_your_user_details'])) {
     $config_mail_from_email = escapeSql($config_mail_from_email);
     $config_app_name = escapeSql($config_app_name);
 
-    if (!empty($config_smtp_host) && ($user_old_email !== $email)) {
+    if (!empty($config_smtp_provider) && ($user_old_email !== $email)) {
 
         $details = "Your email address was changed. New email: $email.";
 
@@ -130,7 +130,7 @@ if (isset($_POST['edit_your_user_password'])) {
     $config_mail_from_email = escapeSql($config_mail_from_email);
     $config_app_name = escapeSql($config_app_name);
 
-    if (!empty($config_smtp_host)){
+    if (!empty($config_smtp_provider)){
 
         $details = "Your password was changed.";
 
@@ -281,7 +281,7 @@ if (isset($_GET['disable_mfa'])){
     $config_app_name = escapeSql($config_app_name);
 
     // Email notification
-    if (!empty($config_smtp_host)) {
+    if (!empty($config_smtp_provider)) {
         $subject = "$config_app_name account update confirmation for $session_name";
         $body = "Hi $session_name, <br><br>Your $config_app_name account has been updated, details below: <br><br> <b>2FA was disabled.</b> <br><br> If you did not perform this change, contact your $config_app_name administrator immediately. <br><br>Thanks, <br>ITFlow<br>$session_company_name";
 

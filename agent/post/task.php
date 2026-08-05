@@ -228,7 +228,7 @@ if (isset($_POST['add_ticket_task_approver'])) {
     if ($scope == 'internal' && $type == 'specific' && $session_user_id !== $required_user_id) {
         mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$session_name needs your approval for ticket $ticket_prefix$ticket_number task $task_name', notification_action = 'ticket.php?ticket_id=$ticket_id', notification_client_id = 0, notification_user_id = $required_user_id");
 
-        if (!empty($config_smtp_host)) {
+        if (!empty($config_smtp_provider)) {
             $agent_contact = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT user_name, user_email FROM users WHERE user_id = $required_user_id AND user_archived_at IS NULL"));
             $name = escapeSql($agent_contact['user_name']);
             $email = escapeSql($agent_contact['user_email']);
@@ -250,7 +250,7 @@ if (isset($_POST['add_ticket_task_approver'])) {
         }
     }
 
-    if (!empty($config_smtp_host) && $scope == 'client' && $type == 'any') {
+    if (!empty($config_smtp_provider) && $scope == 'client' && $type == 'any') {
 
         $contact_row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT contact_name, contact_email FROM contacts WHERE contact_id = $ticket_contact_id LIMIT 1"));
         $contact_name = escapeSql($contact_row['contact_name']);
@@ -272,7 +272,7 @@ if (isset($_POST['add_ticket_task_approver'])) {
 
     }
 
-    if (!empty($config_smtp_host) && $scope == 'client' && $type == 'technical') {
+    if (!empty($config_smtp_provider) && $scope == 'client' && $type == 'technical') {
 
         $sql_technical_contacts = mysqli_query(
             $mysqli,
@@ -305,7 +305,7 @@ if (isset($_POST['add_ticket_task_approver'])) {
 
     }
 
-    if (!empty($config_smtp_host) && $scope == 'client' && $type == 'billing') {
+    if (!empty($config_smtp_provider) && $scope == 'client' && $type == 'billing') {
 
         $sql_billing_contacts = mysqli_query(
             $mysqli,

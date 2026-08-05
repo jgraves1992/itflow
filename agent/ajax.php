@@ -251,7 +251,7 @@ if (isset($_GET['share_generate_link'])) {
     $config_mail_from_email = escapeSql($config_mail_from_email);
 
     // Send user e-mail, if specified
-    if(!empty($config_smtp_host) && filter_var($item_email, FILTER_VALIDATE_EMAIL)){
+    if(!empty($config_smtp_provider) && filter_var($item_email, FILTER_VALIDATE_EMAIL)){
 
         $subject = "Time sensitive - $company_name secure link enclosed";
         if ($item_expires_friendly == "never") {
@@ -560,7 +560,7 @@ if (isset($_POST['update_kanban_ticket'])) {
                 triggerCustomAction('ticket_update', $ticket_id);
 
                 // Client notification email
-                if (!empty($config_smtp_host) && $config_ticket_client_general_notifications == 1) {
+                if (!empty($config_smtp_provider) && $config_ticket_client_general_notifications == 1) {
 
                     // Get details
                     $ticket_sql = mysqli_query($mysqli, "SELECT contact_name, contact_email, ticket_prefix, ticket_number, ticket_subject, ticket_status_name, ticket_assigned_to, ticket_url_key, ticket_client_id FROM tickets

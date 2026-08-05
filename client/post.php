@@ -598,7 +598,7 @@ if (isset($_GET['add_payment_by_provider'])) {
         mysqli_query($mysqli, "UPDATE invoices SET invoice_status = 'Paid' WHERE invoice_id = $invoice_id");
 
         // Add Payment to History
-        $payment_method_label = $pi_is_ach ? 'Stripe ACH (Pending)' : 'Stripe';
+        $payment_method_label = 'Stripe';
         mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $account_id, payment_method = '$payment_method_label', payment_reference = 'Stripe - $pi_id', payment_invoice_id = $invoice_id");
         mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Paid', history_description = 'Online Payment added (agent)', history_invoice_id = $invoice_id");
 
@@ -953,7 +953,7 @@ if (isset($_GET['stripe_save_card'])) {
     $config_invoice_from_email = escapeSql($row['config_invoice_from_email']);
     $config_invoice_from_name = escapeSql($row['config_invoice_from_name']);
 
-    if (!empty($row['config_smtp_host'])) {
+    if (!empty($config_smtp_provider)) {
         $subject = "Payment method saved";
         $body = "Hello $session_contact_name<br><br>
         Were writing to confirm that your payment details have been securely stored with Stripe our trusted payment processor.<br><br>

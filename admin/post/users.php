@@ -66,7 +66,7 @@ if (isset($_POST['add_user'])) {
     $config_base_url = escapeSql($config_base_url);
 
     // Send user e-mail, if specified
-    if (isset($_POST['send_email']) && !empty($config_smtp_host) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    if (isset($_POST['send_email']) && !empty($config_smtp_provider) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
         $password = mysqli_real_escape_string($mysqli, $_POST['password']);
 

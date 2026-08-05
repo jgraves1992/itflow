@@ -951,7 +951,7 @@ while ($row = mysqli_fetch_assoc($sql_recurring_payments)) {
                     mysqli_query($mysqli, "UPDATE invoices SET invoice_status = 'Paid' WHERE invoice_id = $invoice_id");
 
                     // Add Payment to History
-                    $payment_method_label = $pi_is_ach ? 'Stripe ACH (Pending)' : 'Stripe';
+                    $payment_method_label = 'Stripe';
                     mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $account_id, payment_method = '$payment_method_label', payment_reference = 'Stripe - $pi_id', payment_invoice_id = $invoice_id");
                     mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Paid', history_description = 'Online Payment added (autopay)', history_invoice_id = $invoice_id");
 
