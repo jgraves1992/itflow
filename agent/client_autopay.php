@@ -9,10 +9,11 @@ enforceUserPermission('module_sales');
 require_once '../includes/stripe_init.php';
 
 // Get Stripe vars (moved to payment_providers table in 26.08)
-$stripe_vars = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT payment_provider_active, payment_provider_public_key, payment_provider_private_key FROM payment_providers LIMIT 1"));
-$config_stripe_enable = $stripe_vars ? intval($stripe_vars['payment_provider_active']) : 0;
+$stripe_vars = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT payment_provider_id, payment_provider_active, payment_provider_public_key, payment_provider_private_key FROM payment_providers LIMIT 1"));
+$config_stripe_enable      = $stripe_vars ? intval($stripe_vars['payment_provider_active'])        : 0;
 $config_stripe_publishable = $stripe_vars ? escapeHtml($stripe_vars['payment_provider_public_key']) : '';
-$config_stripe_secret = $stripe_vars ? escapeHtml($stripe_vars['payment_provider_private_key']) : '';
+$config_stripe_secret      = $stripe_vars ? $stripe_vars['payment_provider_private_key']            : '';
+$stripe_provider_id        = $stripe_vars ? intval($stripe_vars['payment_provider_id'])             : 0;
 
 // Get client's Stripe relationship (client_payment_provider) and saved PM (client_saved_payment_methods)
 $stripe_client_details = mysqli_fetch_assoc(mysqli_query($mysqli, "
@@ -37,6 +38,36 @@ if (!$config_stripe_enable || !$config_stripe_publishable || !$config_stripe_sec
     echo "Stripe payment error - Stripe is not enabled, please talk to your helpdesk for further information.";
     include_once '../includes/footer.php';
     exit();
+}
+
+// Create checkout session server-side when in State 2 (customer exists, no saved PM)
+$checkout_client_secret = null;
+$checkout_error         = null;
+if ($stripe_client_details && !empty($stripe_id) && empty($stripe_pm)) {
+    try {
+        $stripe_obj = new \Stripe\StripeClient($config_stripe_secret);
+
+        $client_currency_row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT client_currency_code FROM clients WHERE client_id = $client_id LIMIT 1"));
+        $client_currency     = strtolower($client_currency_row['client_currency_code'] ?? 'usd');
+
+        $company_row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT company_base_url FROM companies WHERE company_id = 1"));
+        $base_url    = $company_row['company_base_url'] ?? '';
+        $return_url  = "https://$base_url/agent/post.php?stripe_save_card&client_id=$client_id&session_id={CHECKOUT_SESSION_ID}";
+
+        $checkout_session       = $stripe_obj->checkout->sessions->create([
+            'currency'             => $client_currency,
+            'mode'                 => 'setup',
+            'ui_mode'              => 'embedded_page',
+            'return_url'           => $return_url,
+            'payment_method_types' => ['card', 'us_bank_account'],
+            'customer'             => $stripe_id,
+        ]);
+        $checkout_client_secret = $checkout_session->client_secret;
+
+    } catch (Exception $e) {
+        error_log("Stripe error creating agent checkout session for client $client_id: " . $e->getMessage());
+        $checkout_error = escapeHtml($e->getMessage());
+    }
 }
 
 ?>
@@ -84,13 +115,17 @@ if (!$config_stripe_enable || !$config_stripe_publishable || !$config_stripe_sec
                 Please add the payment details you would like to save.<br>
                 By adding payment details here, you grant consent for future automatic payments of invoices.<br><br>
 
-                <input type="hidden" id="stripe_publishable_key" value="<?= $config_stripe_publishable ?>">
-                <input type="hidden" id="autopay_client_id" value="<?= $client_id ?>">
-                <script src="https://js.stripe.com/v3/"></script>
-                <script src="js/autopay_setup_stripe_agent.js"></script>
-                <div id="checkout">
-                    <!-- Checkout will insert the payment form here -->
-                </div>
+                <?php if ($checkout_error) { ?>
+                    <div class="alert alert-danger">Could not initialize payment setup: <?= $checkout_error ?></div>
+                <?php } elseif ($checkout_client_secret) { ?>
+                    <input type="hidden" id="stripe_publishable_key" value="<?= $config_stripe_publishable ?>">
+                    <script>const stripeCheckoutClientSecret = <?= json_encode($checkout_client_secret) ?>;</script>
+                    <script src="https://js.stripe.com/v3/"></script>
+                    <script src="js/autopay_setup_stripe_agent.js"></script>
+                    <div id="checkout"></div>
+                <?php } else { ?>
+                    <div class="alert alert-danger">Payment setup unavailable. Please check Stripe configuration in Admin &rarr; Payment Providers.</div>
+                <?php } ?>
 
             <?php }
 
