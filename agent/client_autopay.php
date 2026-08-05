@@ -17,7 +17,8 @@ $config_stripe_secret = $stripe_vars ? escapeHtml($stripe_vars['payment_provider
 // Get client's Stripe relationship (client_payment_provider) and saved PM (client_saved_payment_methods)
 $stripe_client_details = mysqli_fetch_assoc(mysqli_query($mysqli, "
     SELECT cpp.payment_provider_client AS stripe_id,
-           spm.saved_payment_provider_method AS stripe_pm
+           spm.saved_payment_provider_method AS stripe_pm,
+           spm.saved_payment_description AS stripe_pm_description
     FROM client_payment_provider cpp
     JOIN payment_providers pp ON pp.payment_provider_id = cpp.payment_provider_id
     LEFT JOIN client_saved_payment_methods spm
@@ -99,32 +100,10 @@ if (!$config_stripe_enable || !$config_stripe_publishable || !$config_stripe_sec
                 <b>Manage saved payment methods</b>
 
                 <?php
-
-                try {
-                    // Initialize
-                    $stripe = new \Stripe\StripeClient($config_stripe_secret);
-
-                    // Get payment method info (last 4 digits etc)
-                    $payment_method = $stripe->customers->retrievePaymentMethod(
-                        $stripe_id,
-                        $stripe_pm,
-                        []
-                    );
-
-                } catch (Exception $e) {
-                    $error = $e->getMessage();
-                    error_log("Stripe payment error - encountered exception when fetching payment method info for $stripe_pm: $error");
-                    logApp("Stripe", "error", "Exception when fetching payment method info for $stripe_pm: $error");
-                }
-
-                $card_name = escapeHtml($payment_method->billing_details->name);
-                $card_brand = escapeHtml($payment_method->card->display_brand);
-                $card_last4 = escapeHtml($payment_method->card->last4);
-                $card_expires = escapeHtml($payment_method->card->exp_month) . "/" . escapeHtml($payment_method->card->exp_year);
-
+                $stripe_pm_description = escapeHtml($stripe_client_details['stripe_pm_description'] ?? $stripe_pm);
                 ?>
 
-                <ul><li><?= "$card_name - $card_brand card ending in $card_last4, expires $card_expires" ?></li></ul>
+                <ul><li><?= $stripe_pm_description ?></li></ul>
 
                 <hr>
                 <b>Actions</b><br>
