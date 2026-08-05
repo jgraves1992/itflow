@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('FROM_POST_HANDLER') or die('Direct access not permitted');
 
 if (!isset($_POST['archive_marketing_lead']) && !isset($_GET['archive_marketing_lead'])) return;
@@ -24,7 +24,7 @@ mysqli_query($mysqli,
 mysqli_query($mysqli,
     "UPDATE marketing_leads SET lead_archived_at = NOW() WHERE lead_id = $lead_id");
 
-flash_alert('Lead archived.');
+flashAlert('Lead archived.');
 header('Location: /agent/custom/marketing_leads.php');
 exit;
 

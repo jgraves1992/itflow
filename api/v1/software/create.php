@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /*
  * API - software/create.php
@@ -30,7 +30,7 @@
 require_once '../validate_api_key.php';
 require_once '../require_post_method.php';
 
-$name = isset($_POST['name']) ? sanitizeInput($_POST['name']) : '';
+$name = isset($_POST['name']) ? escapeSql($_POST['name']) : '';
 
 if (!$name) {
     $return_arr['success'] = "False";
@@ -46,23 +46,23 @@ if (!$client_id) {
     exit();
 }
 
-$type              = isset($_POST['type'])              ? sanitizeInput($_POST['type'])              : '';
-$license_type      = isset($_POST['license_type'])      ? sanitizeInput($_POST['license_type'])      : '';
-$key               = isset($_POST['key'])               ? sanitizeInput($_POST['key'])               : '';
+$type              = isset($_POST['type'])              ? escapeSql($_POST['type'])              : '';
+$license_type      = isset($_POST['license_type'])      ? escapeSql($_POST['license_type'])      : '';
+$key               = isset($_POST['key'])               ? escapeSql($_POST['key'])               : '';
 $seats             = isset($_POST['seats'])             ? intval($_POST['seats'])                    : 0;
-$purchase_reference= isset($_POST['purchase_reference'])? sanitizeInput($_POST['purchase_reference']): '';
-$notes             = isset($_POST['notes'])             ? sanitizeInput($_POST['notes'])             : '';
+$purchase_reference= isset($_POST['purchase_reference'])? escapeSql($_POST['purchase_reference']): '';
+$notes             = isset($_POST['notes'])             ? escapeSql($_POST['notes'])             : '';
 $vendor_id         = isset($_POST['vendor_id'])         ? intval($_POST['vendor_id'])                : 0;
-$sync_source       = isset($_POST['sync_source'])       ? sanitizeInput($_POST['sync_source'])       : '';
-$sync_external_id  = isset($_POST['sync_external_id'])  ? sanitizeInput($_POST['sync_external_id'])  : '';
+$sync_source       = isset($_POST['sync_source'])       ? escapeSql($_POST['sync_source'])       : '';
+$sync_external_id  = isset($_POST['sync_external_id'])  ? escapeSql($_POST['sync_external_id'])  : '';
 
 $purchase = (isset($_POST['purchase']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['purchase']))
-    ? "'" . sanitizeInput($_POST['purchase']) . "'"
+    ? "'" . escapeSql($_POST['purchase']) . "'"
     : 'NULL';
 
 // expire: null means no expiry date tracked
 $expire = (!empty($_POST['expire']) && $_POST['expire'] !== 'null' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['expire']))
-    ? "'" . sanitizeInput($_POST['expire']) . "'"
+    ? "'" . escapeSql($_POST['expire']) . "'"
     : 'NULL';
 
 mysqli_query($mysqli, "
@@ -85,8 +85,8 @@ mysqli_query($mysqli, "
 if (mysqli_affected_rows($mysqli) > 0) {
     $insert_id = mysqli_insert_id($mysqli);
 
-    logAction("Software", "Create", "Software $name created via API ($api_key_name)", $client_id, $insert_id);
-    logAction("API", "Success", "Created software $name via API ($api_key_name)", $client_id);
+    logAudit("Software", "Create", "Software $name created via API ($api_key_name)", $client_id, $insert_id);
+    logAudit("API", "Success", "Created software $name via API ($api_key_name)", $client_id);
 
     $return_arr['success'] = "True";
     $return_arr['count']   = "1";

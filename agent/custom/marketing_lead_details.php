@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 require_once "includes/inc_all_custom.php";
 
@@ -10,7 +10,7 @@ $lead = mysqli_fetch_assoc(mysqli_query($mysqli,
     "SELECT * FROM marketing_leads WHERE lead_id = $lead_id"));
 
 if (!$lead) {
-    flash_alert('Lead not found.', 'error');
+    flashAlert('Lead not found.', 'error');
     header('Location: marketing_leads.php');
     exit;
 }
@@ -61,7 +61,7 @@ $enrollment_colors = [
     <div class="col-md-4">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-user mr-2"></i><?= nullable_htmlentities($lead['lead_name']) ?></h3>
+                <h3 class="card-title"><i class="fas fa-user mr-2"></i><?= escapeHtml($lead['lead_name']) ?></h3>
                 <div class="card-tools">
                     <?php if ($lead['lead_client_id']): ?>
                     <a href="/agent/client_overview.php?client_id=<?= intval($lead['lead_client_id']) ?>"
@@ -96,19 +96,19 @@ $enrollment_colors = [
                 <dl class="row mb-0">
                     <dt class="col-5">Email</dt>
                     <dd class="col-7">
-                        <a href="mailto:<?= nullable_htmlentities($lead['lead_email']) ?>">
-                            <?= nullable_htmlentities($lead['lead_email']) ?>
+                        <a href="mailto:<?= escapeHtml($lead['lead_email']) ?>">
+                            <?= escapeHtml($lead['lead_email']) ?>
                         </a>
                     </dd>
 
                     <?php if ($lead['lead_company']): ?>
                     <dt class="col-5">Company</dt>
-                    <dd class="col-7"><?= nullable_htmlentities($lead['lead_company']) ?></dd>
+                    <dd class="col-7"><?= escapeHtml($lead['lead_company']) ?></dd>
                     <?php endif; ?>
 
                     <?php if ($lead['lead_phone']): ?>
                     <dt class="col-5">Phone</dt>
-                    <dd class="col-7"><?= nullable_htmlentities($lead['lead_phone']) ?></dd>
+                    <dd class="col-7"><?= escapeHtml($lead['lead_phone']) ?></dd>
                     <?php endif; ?>
 
                     <dt class="col-5">Status</dt>
@@ -120,7 +120,7 @@ $enrollment_colors = [
 
                     <?php if ($lead['lead_source']): ?>
                     <dt class="col-5">Source</dt>
-                    <dd class="col-7"><?= nullable_htmlentities($lead['lead_source']) ?></dd>
+                    <dd class="col-7"><?= escapeHtml($lead['lead_source']) ?></dd>
                     <?php endif; ?>
 
                     <dt class="col-5">Added</dt>
@@ -137,7 +137,7 @@ $enrollment_colors = [
 
                 <?php if ($lead['lead_notes']): ?>
                 <hr>
-                <p class="text-muted small mb-0"><?= nl2br(nullable_htmlentities($lead['lead_notes'])) ?></p>
+                <p class="text-muted small mb-0"><?= nl2br(escapeHtml($lead['lead_notes'])) ?></p>
                 <?php endif; ?>
             </div>
         </div>
@@ -181,7 +181,7 @@ $enrollment_colors = [
                         <tr>
                             <td>
                                 <a href="marketing_sequence_details.php?id=<?= $enroll['enrollment_sequence_id'] ?>">
-                                    <?= nullable_htmlentities($enroll['sequence_name']) ?>
+                                    <?= escapeHtml($enroll['sequence_name']) ?>
                                 </a>
                             </td>
                             <td><span class="badge badge-<?= $e_color ?>"><?= ucfirst($enroll['enrollment_status']) ?></span></td>
@@ -244,8 +244,8 @@ $enrollment_colors = [
                     <?php endif; ?>
                     <?php while ($log = mysqli_fetch_assoc($email_log)): ?>
                         <tr>
-                            <td><?= nullable_htmlentities($log['log_subject']) ?></td>
-                            <td><?= nullable_htmlentities($log['sequence_name']) ?></td>
+                            <td><?= escapeHtml($log['log_subject']) ?></td>
+                            <td><?= escapeHtml($log['sequence_name']) ?></td>
                             <td>#<?= $log['step_order'] ?></td>
                             <td><?= date('M j, Y g:ia', strtotime($log['log_sent_at'])) ?></td>
                         </tr>
@@ -274,22 +274,22 @@ $enrollment_colors = [
                     <div class="form-group">
                         <label>Full Name <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" name="lead_name" required
-                               value="<?= nullable_htmlentities($lead['lead_name']) ?>">
+                               value="<?= escapeHtml($lead['lead_name']) ?>">
                     </div>
                     <div class="form-group">
                         <label>Email <span class="text-danger">*</span></label>
                         <input type="email" class="form-control" name="lead_email" required
-                               value="<?= nullable_htmlentities($lead['lead_email']) ?>">
+                               value="<?= escapeHtml($lead['lead_email']) ?>">
                     </div>
                     <div class="form-group">
                         <label>Company</label>
                         <input type="text" class="form-control" name="lead_company"
-                               value="<?= nullable_htmlentities($lead['lead_company']) ?>">
+                               value="<?= escapeHtml($lead['lead_company']) ?>">
                     </div>
                     <div class="form-group">
                         <label>Phone</label>
                         <input type="tel" class="form-control" name="lead_phone"
-                               value="<?= nullable_htmlentities($lead['lead_phone']) ?>">
+                               value="<?= escapeHtml($lead['lead_phone']) ?>">
                     </div>
                     <div class="row">
                         <div class="col-6">
@@ -306,13 +306,13 @@ $enrollment_colors = [
                             <div class="form-group">
                                 <label>Source</label>
                                 <input type="text" class="form-control" name="lead_source"
-                                       value="<?= nullable_htmlentities($lead['lead_source']) ?>">
+                                       value="<?= escapeHtml($lead['lead_source']) ?>">
                             </div>
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Notes</label>
-                        <textarea class="form-control" name="lead_notes" rows="3"><?= nullable_htmlentities($lead['lead_notes']) ?></textarea>
+                        <textarea class="form-control" name="lead_notes" rows="3"><?= escapeHtml($lead['lead_notes']) ?></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -347,7 +347,7 @@ $enrollment_colors = [
                             <option value="">— Choose a sequence —</option>
                             <?php while ($seq = mysqli_fetch_assoc($sequences_available)): ?>
                             <option value="<?= $seq['sequence_id'] ?>">
-                                <?= nullable_htmlentities($seq['sequence_name']) ?>
+                                <?= escapeHtml($seq['sequence_name']) ?>
                             </option>
                             <?php endwhile; ?>
                         </select>

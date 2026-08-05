@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('FROM_POST_HANDLER') or die('Direct access not permitted');
 
 if (!isset($_POST['sync_marketing_leads'])) return;
@@ -30,6 +30,6 @@ mysqli_query($mysqli,
 
 $imported = mysqli_affected_rows($mysqli);
 
-flash_alert("Synced <strong>$imported</strong> client(s) from ITFlow into marketing leads.");
+flashAlert("Synced <strong>$imported</strong> client(s) from ITFlow into marketing leads.");
 header('Location: /agent/custom/marketing_leads.php');
 exit;

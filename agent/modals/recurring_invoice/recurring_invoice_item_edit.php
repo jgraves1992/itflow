@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 require_once '../../../includes/modal_header.php';
 
@@ -117,7 +117,7 @@ ob_start();
                     <option value="0">- None -</option>
                     <?php while ($sw = mysqli_fetch_assoc($sql_software)) {
                         $sw_id    = intval($sw['software_id']);
-                        $sw_name  = nullable_htmlentities($sw['software_name']);
+                        $sw_name  = escapeHtml($sw['software_name']);
                         $sw_seats = intval($sw['software_seats']);
                     ?>
                         <option <?= $sw_id === $item_software_id ? 'selected' : '' ?> value="<?= $sw_id ?>"><?= $sw_name ?> (<?= $sw_seats ?> seats)</option>

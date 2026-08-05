@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('FROM_POST_HANDLER') or die('Direct access not permitted');
 
 if (!isset($_POST['unenroll_marketing_lead'])) return;
@@ -17,6 +17,6 @@ if (!$enrollment_id) {
 mysqli_query($mysqli,
     "DELETE FROM marketing_enrollments WHERE enrollment_id = $enrollment_id");
 
-flash_alert('Lead removed from sequence.');
+flashAlert('Lead removed from sequence.');
 header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");
 exit;

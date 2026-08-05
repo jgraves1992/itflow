@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 require_once '../../../includes/modal_header.php';
 
@@ -84,8 +84,8 @@ ob_start();
                                 <option value="">- None -</option>
                                 <?php foreach ($templates_list as $t) { ?>
                                     <option value="<?= intval($t['contract_template_id']) ?>">
-                                        <?= nullable_htmlentities($t['contract_template_name']) ?>
-                                        (<?= nullable_htmlentities($t['contract_template_type']) ?>)
+                                        <?= escapeHtml($t['contract_template_name']) ?>
+                                        (<?= escapeHtml($t['contract_template_type']) ?>)
                                     </option>
                                 <?php } ?>
                             </select>
@@ -114,7 +114,7 @@ ob_start();
                             <select class="form-control select2" name="client_id" required>
                                 <option value="">- Select Client -</option>
                                 <?php while ($c = mysqli_fetch_assoc($sql_clients)) { ?>
-                                    <option value="<?= intval($c['client_id']) ?>"><?= nullable_htmlentities($c['client_name']) ?></option>
+                                    <option value="<?= intval($c['client_id']) ?>"><?= escapeHtml($c['client_name']) ?></option>
                                 <?php } ?>
                             </select>
                         </div>
@@ -249,7 +249,7 @@ ob_start();
                             <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="fa fa-fw fa-user-tie"></i></span>
                             </div>
-                            <input type="text" class="form-control" name="contract_agent_name" placeholder="Your name / company rep" maxlength="255" value="<?= nullable_htmlentities($session_name ?? '') ?>">
+                            <input type="text" class="form-control" name="contract_agent_name" placeholder="Your name / company rep" maxlength="255" value="<?= escapeHtml($session_name ?? '') ?>">
                         </div>
                     </div>
                 </div>

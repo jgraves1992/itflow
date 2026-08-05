@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('FROM_POST_HANDLER') or die('Direct access not permitted');
 
 // Handles both pause and resume enrollment actions
@@ -50,7 +50,7 @@ if ($new_status === 'active') {
                  SET enrollment_status = 'active', enrollment_next_send_at = '$next_send_at'
                  WHERE enrollment_id = $enrollment_id");
 
-            flash_alert('Enrollment resumed.');
+            flashAlert('Enrollment resumed.');
             header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");
             exit;
         }
@@ -60,6 +60,6 @@ if ($new_status === 'active') {
 mysqli_query($mysqli,
     "UPDATE marketing_enrollments SET enrollment_status = '$new_status' WHERE enrollment_id = $enrollment_id");
 
-flash_alert('Enrollment ' . ($new_status === 'paused' ? 'paused' : 'resumed') . '.');
+flashAlert('Enrollment ' . ($new_status === 'paused' ? 'paused' : 'resumed') . '.');
 header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");
 exit;

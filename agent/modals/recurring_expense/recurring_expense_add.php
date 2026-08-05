@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 require_once '../../../includes/modal_header.php';
 
@@ -104,7 +104,7 @@ ob_start();
                     <select class="form-control select2" name="sync_source">
                         <option value="">- None -</option>
                         <?php while ($src = mysqli_fetch_assoc($sql_sync_sources)) {
-                            $src_name     = nullable_htmlentities($src['software_sync_source']);
+                            $src_name     = escapeHtml($src['software_sync_source']);
                             $client_count = intval($src['client_count']);
                             $total_seats  = intval($src['total_seats']);
                             $exempt_seats = intval($src['exempt_seats']);

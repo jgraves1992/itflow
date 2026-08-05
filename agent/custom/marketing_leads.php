@@ -1,16 +1,16 @@
-<?php
+﻿<?php
 
 require_once "includes/inc_all_custom.php";
 
 enforceUserPermission('module_client');
 
 $show_archived = !empty($_GET['archived']);
-$status_filter = isset($_GET['status']) ? sanitizeInput($_GET['status']) : '';
-$search        = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
+$status_filter = isset($_GET['status']) ? escapeSql($_GET['status']) : '';
+$search        = isset($_GET['search']) ? escapeSql($_GET['search']) : '';
 
 $where = $show_archived ? "WHERE lead_archived_at IS NOT NULL" : "WHERE lead_archived_at IS NULL";
 
-// sanitizeInput() already escapes for SQL — do not re-escape, or quotes/backslashes break the match
+// escapeSql() already escapes for SQL — do not re-escape, or quotes/backslashes break the match
 if ($status_filter) {
     $where .= " AND lead_status = '$status_filter'";
 }
@@ -150,11 +150,11 @@ $sequences_active_sql = mysqli_query($mysqli,
             <?php endif; ?>
             <?php while ($row = mysqli_fetch_assoc($sql)):
                 $lead_id      = intval($row['lead_id']);
-                $lead_name    = nullable_htmlentities($row['lead_name']);
-                $lead_email   = nullable_htmlentities($row['lead_email']);
-                $lead_company = nullable_htmlentities($row['lead_company']);
+                $lead_name    = escapeHtml($row['lead_name']);
+                $lead_email   = escapeHtml($row['lead_email']);
+                $lead_company = escapeHtml($row['lead_company']);
                 $lead_status  = $row['lead_status'];
-                $lead_source  = nullable_htmlentities($row['lead_source']);
+                $lead_source  = escapeHtml($row['lead_source']);
                 $badge_color  = $status_colors[$lead_status] ?? 'secondary';
 
                 $active_seq = intval(mysqli_fetch_assoc(mysqli_query($mysqli,
@@ -320,7 +320,7 @@ $sequences_active_sql = mysqli_query($mysqli,
                         <select class="form-control" name="sequence_id" required>
                             <option value="">- Select Sequence -</option>
                             <?php while ($seq = mysqli_fetch_assoc($sequences_active_sql)): ?>
-                            <option value="<?= intval($seq['sequence_id']) ?>"><?= nullable_htmlentities($seq['sequence_name']) ?></option>
+                            <option value="<?= intval($seq['sequence_id']) ?>"><?= escapeHtml($seq['sequence_name']) ?></option>
                             <?php endwhile; ?>
                         </select>
                     </div>

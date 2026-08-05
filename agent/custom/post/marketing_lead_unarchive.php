@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('FROM_POST_HANDLER') or die('Direct access not permitted');
 
 if (!isset($_POST['unarchive_marketing_lead']) && !isset($_GET['unarchive_marketing_lead'])) return;
@@ -17,7 +17,7 @@ if (!$lead_id) {
 mysqli_query($mysqli,
     "UPDATE marketing_leads SET lead_archived_at = NULL WHERE lead_id = $lead_id");
 
-flash_alert('Lead restored.');
+flashAlert('Lead restored.');
 $referer = $_SERVER['HTTP_REFERER'] ?? '';
 if (strpos($referer, 'marketing_lead_details') !== false) {
     header("Location: /agent/custom/marketing_lead_details.php?id=$lead_id");

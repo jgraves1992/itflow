@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /*
  * ITFlow - GET/POST request handler for contracts
@@ -12,20 +12,20 @@ if (isset($_POST['add_contract'])) {
     enforceUserPermission('module_sales', 2);
 
     $client_id          = intval($_POST['client_id']);
-    $contract_name      = sanitizeInput($_POST['contract_name']);
-    $contract_type      = sanitizeInput($_POST['contract_type']);
-    $contract_status    = sanitizeInput($_POST['contract_status']);
-    $start_date         = sanitizeInput($_POST['contract_start_date']);
-    $end_date           = sanitizeInput($_POST['contract_end_date']);
-    $renewal_frequency  = sanitizeInput($_POST['contract_renewal_frequency']);
-    $client_name_snap   = sanitizeInput($_POST['contract_client_name']);
-    $client_addr_snap   = sanitizeInput($_POST['contract_client_address']);
-    $client_email_snap  = sanitizeInput($_POST['contract_client_email']);
-    $client_phone_snap  = sanitizeInput($_POST['contract_client_phone']);
-    $contact_name       = sanitizeInput($_POST['contract_contact_name']);
-    $agent_name         = sanitizeInput($_POST['contract_agent_name']);
-    $net_terms          = sanitizeInput($_POST['contract_net_terms']);
-    $support_hours      = sanitizeInput($_POST['contract_support_hours']);
+    $contract_name      = escapeSql($_POST['contract_name']);
+    $contract_type      = escapeSql($_POST['contract_type']);
+    $contract_status    = escapeSql($_POST['contract_status']);
+    $start_date         = escapeSql($_POST['contract_start_date']);
+    $end_date           = escapeSql($_POST['contract_end_date']);
+    $renewal_frequency  = escapeSql($_POST['contract_renewal_frequency']);
+    $client_name_snap   = escapeSql($_POST['contract_client_name']);
+    $client_addr_snap   = escapeSql($_POST['contract_client_address']);
+    $client_email_snap  = escapeSql($_POST['contract_client_email']);
+    $client_phone_snap  = escapeSql($_POST['contract_client_phone']);
+    $contact_name       = escapeSql($_POST['contract_contact_name']);
+    $agent_name         = escapeSql($_POST['contract_agent_name']);
+    $net_terms          = escapeSql($_POST['contract_net_terms']);
+    $support_hours      = escapeSql($_POST['contract_support_hours']);
     $details            = mysqli_escape_string($mysqli, $_POST['contract_details'] ?? '');
     $sla_low_resp       = intval($_POST['sla_low_response_time']);
     $sla_low_res        = intval($_POST['sla_low_resolution_time']);
@@ -38,7 +38,7 @@ if (isset($_POST['add_contract'])) {
 
     // Validate required fields
     if (empty($contract_name) || empty($contract_type) || empty($contract_status) || $client_id <= 0) {
-        flash_alert("Contract name, type, status, and client are required.", "danger");
+        flashAlert("Contract name, type, status, and client are required.", "danger");
         redirect();
     }
 
@@ -51,9 +51,9 @@ if (isset($_POST['add_contract'])) {
             LEFT JOIN locations ON client_id = location_client_id AND location_primary = 1
             WHERE client_id = $client_id LIMIT 1");
         if ($c = mysqli_fetch_assoc($sql_client)) {
-            if (empty($client_name_snap))  $client_name_snap  = sanitizeInput($c['client_name']);
-            if (empty($client_email_snap)) $client_email_snap = sanitizeInput($c['contact_email'] ?? '');
-            if (empty($client_phone_snap)) $client_phone_snap = sanitizeInput($c['contact_phone'] ?? '');
+            if (empty($client_name_snap))  $client_name_snap  = escapeSql($c['client_name']);
+            if (empty($client_email_snap)) $client_email_snap = escapeSql($c['contact_email'] ?? '');
+            if (empty($client_phone_snap)) $client_phone_snap = escapeSql($c['contact_phone'] ?? '');
             if (empty($client_addr_snap)) {
                 $addr_parts = array_filter([
                     $c['location_address'] ?? '',
@@ -61,9 +61,9 @@ if (isset($_POST['add_contract'])) {
                     $c['location_state'] ?? '',
                     $c['location_zip'] ?? '',
                 ]);
-                $client_addr_snap = sanitizeInput(implode(', ', $addr_parts));
+                $client_addr_snap = escapeSql(implode(', ', $addr_parts));
             }
-            if (empty($contact_name)) $contact_name = sanitizeInput($c['contact_name'] ?? '');
+            if (empty($contact_name)) $contact_name = escapeSql($c['contact_name'] ?? '');
         }
     }
 
@@ -99,9 +99,9 @@ if (isset($_POST['add_contract'])) {
 
     $contract_id = mysqli_insert_id($mysqli);
 
-    logAction("Contract", "Create", "$session_name created contract $contract_name", $client_id, $contract_id);
+    logAudit("Contract", "Create", "$session_name created contract $contract_name", $client_id, $contract_id);
 
-    flash_alert("Contract <strong>$contract_name</strong> created");
+    flashAlert("Contract <strong>$contract_name</strong> created");
     redirect("contract.php?client_id=$client_id&contract_id=$contract_id");
 }
 
@@ -111,20 +111,20 @@ if (isset($_POST['edit_contract'])) {
     enforceUserPermission('module_sales', 2);
 
     $contract_id        = intval($_POST['contract_id']);
-    $contract_name      = sanitizeInput($_POST['contract_name']);
-    $contract_type      = sanitizeInput($_POST['contract_type']);
-    $contract_status    = sanitizeInput($_POST['contract_status']);
-    $start_date         = sanitizeInput($_POST['contract_start_date']);
-    $end_date           = sanitizeInput($_POST['contract_end_date']);
-    $renewal_frequency  = sanitizeInput($_POST['contract_renewal_frequency']);
-    $client_name_snap   = sanitizeInput($_POST['contract_client_name']);
-    $client_addr_snap   = sanitizeInput($_POST['contract_client_address']);
-    $client_email_snap  = sanitizeInput($_POST['contract_client_email']);
-    $client_phone_snap  = sanitizeInput($_POST['contract_client_phone']);
-    $contact_name       = sanitizeInput($_POST['contract_contact_name']);
-    $agent_name         = sanitizeInput($_POST['contract_agent_name']);
-    $net_terms          = sanitizeInput($_POST['contract_net_terms']);
-    $support_hours      = sanitizeInput($_POST['contract_support_hours']);
+    $contract_name      = escapeSql($_POST['contract_name']);
+    $contract_type      = escapeSql($_POST['contract_type']);
+    $contract_status    = escapeSql($_POST['contract_status']);
+    $start_date         = escapeSql($_POST['contract_start_date']);
+    $end_date           = escapeSql($_POST['contract_end_date']);
+    $renewal_frequency  = escapeSql($_POST['contract_renewal_frequency']);
+    $client_name_snap   = escapeSql($_POST['contract_client_name']);
+    $client_addr_snap   = escapeSql($_POST['contract_client_address']);
+    $client_email_snap  = escapeSql($_POST['contract_client_email']);
+    $client_phone_snap  = escapeSql($_POST['contract_client_phone']);
+    $contact_name       = escapeSql($_POST['contract_contact_name']);
+    $agent_name         = escapeSql($_POST['contract_agent_name']);
+    $net_terms          = escapeSql($_POST['contract_net_terms']);
+    $support_hours      = escapeSql($_POST['contract_support_hours']);
     $details            = mysqli_escape_string($mysqli, $_POST['contract_details'] ?? '');
     $sla_low_resp       = intval($_POST['sla_low_response_time']);
     $sla_low_res        = intval($_POST['sla_low_resolution_time']);
@@ -171,9 +171,9 @@ if (isset($_POST['edit_contract'])) {
     WHERE contract_id = $contract_id
     LIMIT 1");
 
-    logAction("Contract", "Update", "$session_name updated contract $contract_name", $client_id, $contract_id);
+    logAudit("Contract", "Update", "$session_name updated contract $contract_name", $client_id, $contract_id);
 
-    flash_alert("Contract <strong>$contract_name</strong> updated");
+    flashAlert("Contract <strong>$contract_name</strong> updated");
     redirect();
 }
 
@@ -183,26 +183,26 @@ if (isset($_GET['set_contract_status'])) {
     enforceUserPermission('module_sales', 2);
 
     $contract_id    = intval($_GET['set_contract_status']);
-    $new_status     = sanitizeInput($_GET['status']);
+    $new_status     = escapeSql($_GET['status']);
     $allowed        = ['Active', 'Pending', 'Expired', 'Terminated'];
 
     if (!in_array($new_status, $allowed)) {
-        flash_alert("Invalid contract status.", "danger");
+        flashAlert("Invalid contract status.", "danger");
         redirect();
     }
 
     $sql_check = mysqli_query($mysqli, "SELECT contract_client_id, contract_name FROM contracts WHERE contract_id = $contract_id LIMIT 1");
     $check = mysqli_fetch_assoc($sql_check);
     $client_id = intval($check['contract_client_id']);
-    $contract_name = sanitizeInput($check['contract_name']);
+    $contract_name = escapeSql($check['contract_name']);
 
     enforceClientAccess();
 
     mysqli_query($mysqli, "UPDATE contracts SET contract_status = '$new_status' WHERE contract_id = $contract_id LIMIT 1");
 
-    logAction("Contract", "Status", "$session_name set contract $contract_name to $new_status", $client_id, $contract_id);
+    logAudit("Contract", "Status", "$session_name set contract $contract_name to $new_status", $client_id, $contract_id);
 
-    flash_alert("Contract status updated to <strong>$new_status</strong>");
+    flashAlert("Contract status updated to <strong>$new_status</strong>");
     redirect();
 }
 
@@ -216,15 +216,15 @@ if (isset($_GET['archive_contract'])) {
     $sql_check = mysqli_query($mysqli, "SELECT contract_client_id, contract_name FROM contracts WHERE contract_id = $contract_id LIMIT 1");
     $check = mysqli_fetch_assoc($sql_check);
     $client_id = intval($check['contract_client_id']);
-    $contract_name = sanitizeInput($check['contract_name']);
+    $contract_name = escapeSql($check['contract_name']);
 
     enforceClientAccess();
 
     mysqli_query($mysqli, "UPDATE contracts SET contract_archived_at = NOW() WHERE contract_id = $contract_id LIMIT 1");
 
-    logAction("Contract", "Archive", "$session_name archived contract $contract_name", $client_id, $contract_id);
+    logAudit("Contract", "Archive", "$session_name archived contract $contract_name", $client_id, $contract_id);
 
-    flash_alert("Contract <strong>$contract_name</strong> archived", "danger");
+    flashAlert("Contract <strong>$contract_name</strong> archived", "danger");
     redirect("contracts.php?client_id=$client_id");
 }
 
@@ -238,15 +238,15 @@ if (isset($_GET['restore_contract'])) {
     $sql_check = mysqli_query($mysqli, "SELECT contract_client_id, contract_name FROM contracts WHERE contract_id = $contract_id LIMIT 1");
     $check = mysqli_fetch_assoc($sql_check);
     $client_id = intval($check['contract_client_id']);
-    $contract_name = sanitizeInput($check['contract_name']);
+    $contract_name = escapeSql($check['contract_name']);
 
     enforceClientAccess();
 
     mysqli_query($mysqli, "UPDATE contracts SET contract_archived_at = NULL WHERE contract_id = $contract_id LIMIT 1");
 
-    logAction("Contract", "Restore", "$session_name restored contract $contract_name", $client_id, $contract_id);
+    logAudit("Contract", "Restore", "$session_name restored contract $contract_name", $client_id, $contract_id);
 
-    flash_alert("Contract <strong>$contract_name</strong> restored");
+    flashAlert("Contract <strong>$contract_name</strong> restored");
     redirect();
 }
 
@@ -260,14 +260,14 @@ if (isset($_GET['delete_contract'])) {
     $sql_check = mysqli_query($mysqli, "SELECT contract_client_id, contract_name FROM contracts WHERE contract_id = $contract_id LIMIT 1");
     $check = mysqli_fetch_assoc($sql_check);
     $client_id = intval($check['contract_client_id']);
-    $contract_name = sanitizeInput($check['contract_name']);
+    $contract_name = escapeSql($check['contract_name']);
 
     enforceClientAccess();
 
     mysqli_query($mysqli, "DELETE FROM contracts WHERE contract_id = $contract_id LIMIT 1");
 
-    logAction("Contract", "Delete", "$session_name deleted contract $contract_name", $client_id, 0);
+    logAudit("Contract", "Delete", "$session_name deleted contract $contract_name", $client_id, 0);
 
-    flash_alert("Contract <strong>$contract_name</strong> deleted", "danger");
+    flashAlert("Contract <strong>$contract_name</strong> deleted", "danger");
     redirect("contracts.php?client_id=$client_id");
 }

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 require_once '../../../includes/modal_header.php';
 
@@ -23,9 +23,9 @@ $software_notes = escapeHtml($row['software_notes']);
 $software_created_at = escapeHtml($row['software_created_at']);
 $software_vendor_id = intval($row['software_vendor_id']);
 $client_id = intval($row['software_client_id']);
-$software_sync_source      = nullable_htmlentities($row['software_sync_source'] ?? '');
-$software_sync_external_id = nullable_htmlentities($row['software_sync_external_id'] ?? '');
-$software_sync_last_at     = nullable_htmlentities($row['software_sync_last_at'] ?? '');
+$software_sync_source      = escapeHtml($row['software_sync_source'] ?? '');
+$software_sync_external_id = escapeHtml($row['software_sync_external_id'] ?? '');
+$software_sync_last_at     = escapeHtml($row['software_sync_last_at'] ?? '');
 $software_billing_exempt   = intval($row['software_billing_exempt'] ?? 0);
 $seat_count = 0;
 

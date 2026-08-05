@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('FROM_POST_HANDLER') or die('Direct access not permitted');
 
 if (!isset($_POST['bulk_archive_marketing_leads'])) return;
@@ -10,7 +10,7 @@ $lead_ids = array_map('intval', (array) ($_POST['lead_ids'] ?? []));
 $lead_ids = array_filter($lead_ids);
 
 if (empty($lead_ids)) {
-    flash_alert('No leads selected.', 'error');
+    flashAlert('No leads selected.', 'error');
     header('Location: /agent/custom/marketing_leads.php');
     exit;
 }
@@ -29,6 +29,6 @@ mysqli_query($mysqli,
      WHERE lead_id IN ($ids_sql) AND lead_archived_at IS NULL");
 
 $count = mysqli_affected_rows($mysqli);
-flash_alert("$count lead(s) archived.");
+flashAlert("$count lead(s) archived.");
 header('Location: /agent/custom/marketing_leads.php');
 exit;

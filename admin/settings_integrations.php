@@ -1,13 +1,13 @@
-<?php
+﻿<?php
 require_once "includes/inc_all_admin.php";
 
 $row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT config_huntress_api_key, config_huntress_api_secret, config_levelio_api_key, config_sherweb_client_id, config_sherweb_client_secret, config_sherweb_subscription_key FROM settings WHERE company_id = 1"));
-$config_huntress_api_key    = nullable_htmlentities($row['config_huntress_api_key'] ?? '');
-$config_huntress_api_secret = nullable_htmlentities($row['config_huntress_api_secret'] ?? '');
-$config_levelio_api_key     = nullable_htmlentities($row['config_levelio_api_key'] ?? '');
-$config_sherweb_client_id        = nullable_htmlentities($row['config_sherweb_client_id'] ?? '');
-$config_sherweb_client_secret    = nullable_htmlentities($row['config_sherweb_client_secret'] ?? '');
-$config_sherweb_subscription_key = nullable_htmlentities($row['config_sherweb_subscription_key'] ?? '');
+$config_huntress_api_key    = escapeHtml($row['config_huntress_api_key'] ?? '');
+$config_huntress_api_secret = escapeHtml($row['config_huntress_api_secret'] ?? '');
+$config_levelio_api_key     = escapeHtml($row['config_levelio_api_key'] ?? '');
+$config_sherweb_client_id        = escapeHtml($row['config_sherweb_client_id'] ?? '');
+$config_sherweb_client_secret    = escapeHtml($row['config_sherweb_client_secret'] ?? '');
+$config_sherweb_subscription_key = escapeHtml($row['config_sherweb_subscription_key'] ?? '');
 ?>
 
 <div class="card card-dark">

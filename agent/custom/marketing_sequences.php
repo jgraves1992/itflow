@@ -1,13 +1,13 @@
-<?php
+﻿<?php
 
 require_once "includes/inc_all_custom.php";
 
 enforceUserPermission('module_client');
 
-$search = isset($_GET['search']) ? sanitizeInput($_GET['search']) : '';
+$search = isset($_GET['search']) ? escapeSql($_GET['search']) : '';
 $where  = "WHERE sequence_archived_at IS NULL";
 
-// sanitizeInput() already escapes for SQL — do not re-escape, or quotes/backslashes break the match
+// escapeSql() already escapes for SQL — do not re-escape, or quotes/backslashes break the match
 if ($search) {
     $where .= " AND (sequence_name LIKE '%$search%' OR sequence_description LIKE '%$search%')";
 }
@@ -85,10 +85,10 @@ if ($sql === false) {
                 <tr>
                     <td>
                         <a href="marketing_sequence_details.php?id=<?= $seq_id ?>">
-                            <?= nullable_htmlentities($seq['sequence_name']) ?>
+                            <?= escapeHtml($seq['sequence_name']) ?>
                         </a>
                         <?php if ($seq['sequence_description']): ?>
-                        <small class="text-muted d-block"><?= nullable_htmlentities(mb_strimwidth($seq['sequence_description'], 0, 80, '…')) ?></small>
+                        <small class="text-muted d-block"><?= escapeHtml(mb_strimwidth($seq['sequence_description'], 0, 80, '…')) ?></small>
                         <?php endif; ?>
                     </td>
                     <td><?= $seq['step_count'] ?></td>
@@ -102,7 +102,7 @@ if ($sql === false) {
                     <td><?= $seq['total_leads'] ?></td>
                     <td>
                         <?php if ($seq['sequence_from_email']): ?>
-                            <small><?= nullable_htmlentities($seq['sequence_from_name'] ?: $seq['sequence_from_email']) ?></small>
+                            <small><?= escapeHtml($seq['sequence_from_name'] ?: $seq['sequence_from_email']) ?></small>
                         <?php else: ?>
                             <small class="text-muted">System default</small>
                         <?php endif; ?>

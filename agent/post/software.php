@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /*
  * ITFlow - GET/POST request handler for client software & licenses
@@ -135,8 +135,8 @@ if (isset($_POST['edit_software'])) {
     }
     $notes = escapeSql($_POST['notes']);
     $vendor = intval($_POST['vendor'] ?? 0);
-    $sync_source      = sanitizeInput($_POST['sync_source'] ?? '');
-    $sync_external_id = sanitizeInput($_POST['sync_external_id'] ?? '');
+    $sync_source      = escapeSql($_POST['sync_source'] ?? '');
+    $sync_external_id = escapeSql($_POST['sync_external_id'] ?? '');
     $billing_exempt   = isset($_POST['billing_exempt']) ? 1 : 0;
 
     $client_id = intval(getFieldById('software', $software_id, 'software_client_id'));

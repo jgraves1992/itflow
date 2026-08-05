@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('FROM_POST_HANDLER') or die('Direct access not permitted');
 
 if (!isset($_POST['delete_marketing_step'])) return;
@@ -33,6 +33,6 @@ while ($s = mysqli_fetch_assoc($steps)) {
     $order++;
 }
 
-flash_alert('Step deleted.');
+flashAlert('Step deleted.');
 header("Location: /agent/custom/marketing_sequence_details.php?id=$sequence_id");
 exit;

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('FROM_POST_HANDLER') or die('Direct access not permitted');
 
 if (!isset($_POST['archive_marketing_sequence'])) return;
@@ -22,6 +22,6 @@ mysqli_query($mysqli,
 mysqli_query($mysqli,
     "UPDATE marketing_sequences SET sequence_archived_at = NOW() WHERE sequence_id = $sequence_id");
 
-flash_alert('Sequence archived.');
+flashAlert('Sequence archived.');
 header('Location: /agent/custom/marketing_sequences.php');
 exit;

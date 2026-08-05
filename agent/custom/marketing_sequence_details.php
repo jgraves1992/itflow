@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 require_once "includes/inc_all_custom.php";
 
@@ -10,7 +10,7 @@ $sequence = mysqli_fetch_assoc(mysqli_query($mysqli,
     "SELECT * FROM marketing_sequences WHERE sequence_id = $sequence_id AND sequence_archived_at IS NULL"));
 
 if (!$sequence) {
-    flash_alert('Sequence not found.', 'error');
+    flashAlert('Sequence not found.', 'error');
     header('Location: marketing_sequences.php');
     exit;
 }
@@ -57,9 +57,9 @@ if ($step_count > 0) {
                 </div>
             </div>
             <div class="card-body">
-                <h5 class="mb-1"><?= nullable_htmlentities($sequence['sequence_name']) ?></h5>
+                <h5 class="mb-1"><?= escapeHtml($sequence['sequence_name']) ?></h5>
                 <?php if ($sequence['sequence_description']): ?>
-                <p class="text-muted small"><?= nl2br(nullable_htmlentities($sequence['sequence_description'])) ?></p>
+                <p class="text-muted small"><?= nl2br(escapeHtml($sequence['sequence_description'])) ?></p>
                 <?php endif; ?>
                 <hr>
                 <dl class="row mb-0">
@@ -80,7 +80,7 @@ if ($step_count > 0) {
                     <dt class="col-6">From</dt>
                     <dd class="col-6">
                         <?php if ($sequence['sequence_from_email']): ?>
-                            <small><?= nullable_htmlentities($sequence['sequence_from_name'] ?: $sequence['sequence_from_email']) ?></small>
+                            <small><?= escapeHtml($sequence['sequence_from_name'] ?: $sequence['sequence_from_email']) ?></small>
                         <?php else: ?>
                             <small class="text-muted">System default</small>
                         <?php endif; ?>
@@ -141,9 +141,9 @@ if ($step_count > 0) {
                             <small class="d-block text-muted mt-1">Day <?= $step['step_delay_days'] ?></small>
                         </div>
                         <div class="flex-grow-1">
-                            <strong><?= nullable_htmlentities($step['step_subject']) ?></strong>
+                            <strong><?= escapeHtml($step['step_subject']) ?></strong>
                             <div class="text-muted small mt-1" style="max-height:60px;overflow:hidden">
-                                <?= nl2br(nullable_htmlentities(mb_strimwidth(strip_tags($step['step_body']), 0, 200, '…'))) ?>
+                                <?= nl2br(escapeHtml(mb_strimwidth(strip_tags($step['step_body']), 0, 200, '…'))) ?>
                             </div>
                         </div>
                         <div class="ml-3 text-nowrap">
@@ -183,7 +183,7 @@ if ($step_count > 0) {
                                             <div class="form-group">
                                                 <label>Subject <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control" name="step_subject" required
-                                                       value="<?= nullable_htmlentities($step['step_subject']) ?>">
+                                                       value="<?= escapeHtml($step['step_subject']) ?>">
                                             </div>
                                         </div>
                                         <div class="col-4">
@@ -198,7 +198,7 @@ if ($step_count > 0) {
                                     <div class="form-group">
                                         <label>Email Body <span class="text-danger">*</span></label>
                                         <textarea class="form-control tinymce" name="step_body" rows="12"
-                                                  placeholder="Use {{name}}, {{company}}, {{unsubscribe_link}} etc."><?= nullable_htmlentities($step['step_body']) ?></textarea>
+                                                  placeholder="Use {{name}}, {{company}}, {{unsubscribe_link}} etc."><?= escapeHtml($step['step_body']) ?></textarea>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
@@ -232,11 +232,11 @@ if ($step_count > 0) {
                     <div class="form-group">
                         <label>Sequence Name <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" name="sequence_name" required
-                               value="<?= nullable_htmlentities($sequence['sequence_name']) ?>">
+                               value="<?= escapeHtml($sequence['sequence_name']) ?>">
                     </div>
                     <div class="form-group">
                         <label>Description</label>
-                        <textarea class="form-control" name="sequence_description" rows="2"><?= nullable_htmlentities($sequence['sequence_description']) ?></textarea>
+                        <textarea class="form-control" name="sequence_description" rows="2"><?= escapeHtml($sequence['sequence_description']) ?></textarea>
                     </div>
                     <div class="form-group">
                         <label>Daily Send Time</label>
@@ -257,7 +257,7 @@ if ($step_count > 0) {
                             <div class="form-group">
                                 <label>From Name</label>
                                 <input type="text" class="form-control" name="sequence_from_name"
-                                       value="<?= nullable_htmlentities($sequence['sequence_from_name']) ?>"
+                                       value="<?= escapeHtml($sequence['sequence_from_name']) ?>"
                                        placeholder="System default">
                             </div>
                         </div>
@@ -265,7 +265,7 @@ if ($step_count > 0) {
                             <div class="form-group">
                                 <label>From Email</label>
                                 <input type="email" class="form-control" name="sequence_from_email"
-                                       value="<?= nullable_htmlentities($sequence['sequence_from_email']) ?>"
+                                       value="<?= escapeHtml($sequence['sequence_from_email']) ?>"
                                        placeholder="System default">
                             </div>
                         </div>

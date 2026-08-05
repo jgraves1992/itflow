@@ -697,7 +697,17 @@ while ($row = mysqli_fetch_assoc($sql_recurring_invoices)) {
     //Generate a unique URL key for clients to access
     $url_key = randomString(32);
 
-    mysqli_query($mysqli, "INSERT INTO invoices SET invoice_prefix = '$config_invoice_prefix', invoice_number = $new_invoice_number, invoice_scope = '$recurring_invoice_scope', invoice_date = CURDATE(), invoice_due = DATE_ADD(CURDATE(), INTERVAL $client_net_terms day), invoice_discount_amount = $recurring_invoice_discount_amount, invoice_amount = $recurring_invoice_amount, invoice_currency_code = '$recurring_invoice_currency_code', invoice_note = '$recurring_invoice_note', invoice_category_id = $category_id, invoice_status = 'Sent', invoice_url_key = '$url_key', invoice_recurring_invoice_id = $recurring_invoice_id, invoice_client_id = $client_id");
+    // Due date = today + client's net terms, capped to the 5th of the generation month
+    // (skip the cap if the 5th has already passed this month, to avoid a due date before the invoice date)
+    $today = date('Y-m-d');
+    $invoice_due = date('Y-m-d', strtotime("$today +$client_net_terms days"));
+    $fifth_of_month = date('Y-m-05', strtotime($today));
+    if (strtotime($invoice_due) > strtotime($fifth_of_month) && strtotime($fifth_of_month) >= strtotime($today)) {
+        $invoice_due = $fifth_of_month;
+    }
+    $invoice_due = escapeSql($invoice_due);
+
+    mysqli_query($mysqli, "INSERT INTO invoices SET invoice_prefix = '$config_invoice_prefix', invoice_number = $new_invoice_number, invoice_scope = '$recurring_invoice_scope', invoice_date = CURDATE(), invoice_due = '$invoice_due', invoice_discount_amount = $recurring_invoice_discount_amount, invoice_amount = $recurring_invoice_amount, invoice_currency_code = '$recurring_invoice_currency_code', invoice_note = '$recurring_invoice_note', invoice_category_id = $category_id, invoice_status = 'Sent', invoice_url_key = '$url_key', invoice_recurring_invoice_id = $recurring_invoice_id, invoice_client_id = $client_id");
 
     $new_invoice_id = mysqli_insert_id($mysqli);
 
@@ -918,7 +928,11 @@ while ($row = mysqli_fetch_assoc($sql_recurring_payments)) {
 
                     $pi_id = escapeSql($payment_intent->id);
                     $pi_date = date('Y-m-d', $payment_intent->created);
-                    $pi_amount_paid = floatval($payment_intent->amount_received / 100);
+                    // ACH returns status "processing" with amount_received = 0 until funds settle
+                    $pi_is_ach = ($payment_intent->status === 'processing');
+                    $pi_amount_paid = $pi_is_ach
+                        ? floatval($payment_intent->amount / 100)
+                        : floatval($payment_intent->amount_received / 100);
                     $pi_currency = strtoupper(escapeSql($payment_intent->currency));
                     $pi_livemode = $payment_intent->livemode;
 
@@ -931,13 +945,14 @@ while ($row = mysqli_fetch_assoc($sql_recurring_payments)) {
                     continue;
                 }
 
-                if ($payment_intent->status == "succeeded" && intval($balance_to_pay) == intval($pi_amount_paid)) {
+                if (in_array($payment_intent->status, ['succeeded', 'processing']) && intval($balance_to_pay) == intval($pi_amount_paid)) {
 
-                    // Update Invoice Status
+                    // Update Invoice Status — ACH is optimistically marked Paid; funds settle within 4 business days
                     mysqli_query($mysqli, "UPDATE invoices SET invoice_status = 'Paid' WHERE invoice_id = $invoice_id");
 
                     // Add Payment to History
-                    mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $account_id, payment_method = 'Stripe', payment_reference = 'Stripe - $pi_id', payment_invoice_id = $invoice_id");
+                    $payment_method_label = $pi_is_ach ? 'Stripe ACH (Pending)' : 'Stripe';
+                    mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $account_id, payment_method = '$payment_method_label', payment_reference = 'Stripe - $pi_id', payment_invoice_id = $invoice_id");
                     mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Paid', history_description = 'Online Payment added (autopay)', history_invoice_id = $invoice_id");
 
                     // RECEIPT EMAIL
@@ -975,6 +990,9 @@ while ($row = mysqli_fetch_assoc($sql_recurring_payments)) {
 
                     // LOGGING
                     $extended_log_desc = !$pi_livemode ? '(DEV MODE)' : '';
+                    if ($pi_is_ach) {
+                        $extended_log_desc .= ' (ACH - Pending Settlement)';
+                    }
                     appNotify("Invoice Paid", "Invoice $invoice_prefix$invoice_number automatically paid", "/agent/invoice.php?invoice_id=$invoice_id", $client_id);
                     logAudit("Invoice", "Payment", "Auto Stripe payment amount of " . numfmt_format_currency($currency_format, $invoice_amount, $recurring_payment_currency_code) . " added to invoice $invoice_prefix$invoice_number - $pi_id $extended_log_desc", $client_id, $invoice_id);
                     triggerCustomAction('invoice_pay', $invoice_id);
@@ -1376,6 +1394,402 @@ if ($updates->current_version !== $updates->latest_version) {
     appNotify("Update", "$update_message", "/admin/update.php");
 }
 
+
+
+/*
+ * ###############################################################################################################
+ *  MARKETING LEAD ARCHIVAL
+ * ###############################################################################################################
+ */
+
+// Archive client records where the linked marketing lead has been archived
+mysqli_query($mysqli, "
+    UPDATE clients c
+    JOIN marketing_leads ml ON ml.lead_client_id = c.client_id
+    SET c.client_archived_at = NOW()
+    WHERE ml.lead_archived_at IS NOT NULL
+      AND ml.lead_client_id > 0
+      AND c.client_archived_at IS NULL
+      AND c.client_lead = 1
+");
+
+
+/*
+ * ###############################################################################################################
+ *  CONTRACTS — expiry alerts and auto-renewal
+ * ###############################################################################################################
+ */
+
+// Contracts Expiring — heads-up alerts ahead of the end date
+$contract_alert_array = [30, 60, 90];
+
+foreach ($contract_alert_array as $day) {
+
+    $sql = mysqli_query(
+        $mysqli,
+        "SELECT * FROM contracts
+        LEFT JOIN clients ON contract_client_id = client_id
+        WHERE contract_status = 'Active'
+        AND contract_archived_at IS NULL
+        AND contract_end_date = CURDATE() + INTERVAL $day DAY"
+    );
+
+    while ($row = mysqli_fetch_assoc($sql)) {
+        $contract_id = intval($row['contract_id']);
+        $contract_name = escapeSql($row['contract_name']);
+        $contract_end_date = escapeSql($row['contract_end_date']);
+        $contract_renewal_frequency = escapeSql($row['contract_renewal_frequency']);
+        $client_id = intval($row['client_id']);
+        $client_name = escapeSql($row['client_name']);
+
+        $renewal_note = (!empty($contract_renewal_frequency) && $contract_renewal_frequency !== 'Manual')
+            ? "will auto-renew"
+            : "requires manual renewal";
+
+        appNotify("Contract Expiring", "Contract $contract_name for $client_name will expire in $day Days on $contract_end_date ($renewal_note)", "/agent/contract.php?contract_id=$contract_id", $client_id);
+    }
+}
+
+// Contracts reaching their end date today — auto-renew or expire
+$contract_renewal_intervals = [
+    'Annually' => '1 YEAR',
+    '2 Year'   => '2 YEAR',
+    '3 Year'   => '3 YEAR',
+    '5 Year'   => '5 YEAR',
+    '7 Year'   => '7 YEAR',
+];
+
+$sql_contracts_due = mysqli_query(
+    $mysqli,
+    "SELECT * FROM contracts
+    LEFT JOIN clients ON contract_client_id = client_id
+    WHERE contract_status = 'Active'
+    AND contract_archived_at IS NULL
+    AND contract_end_date = CURDATE()"
+);
+
+while ($row = mysqli_fetch_assoc($sql_contracts_due)) {
+    $contract_id = intval($row['contract_id']);
+    $contract_name = escapeSql($row['contract_name']);
+    $contract_renewal_frequency = escapeSql($row['contract_renewal_frequency']);
+    $client_id = intval($row['client_id']);
+    $client_name = escapeSql($row['client_name']);
+
+    if (isset($contract_renewal_intervals[$contract_renewal_frequency])) {
+        // Auto-renew: push the end date forward, keep status Active
+        $interval = $contract_renewal_intervals[$contract_renewal_frequency];
+
+        mysqli_query($mysqli, "UPDATE contracts SET contract_end_date = DATE_ADD(contract_end_date, INTERVAL $interval) WHERE contract_id = $contract_id LIMIT 1");
+
+        $new_end_date = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT contract_end_date FROM contracts WHERE contract_id = $contract_id"))['contract_end_date'];
+
+        logAudit("Contract", "Renew", "Cron auto-renewed contract $contract_name ($contract_renewal_frequency) — new end date $new_end_date", $client_id, $contract_id);
+
+        appNotify("Contract Renewed", "Contract $contract_name for $client_name was automatically renewed through $new_end_date", "/agent/contract.php?contract_id=$contract_id", $client_id);
+
+    } else {
+        // Manual or unset renewal frequency — expire and require human follow-up
+        mysqli_query($mysqli, "UPDATE contracts SET contract_status = 'Expired' WHERE contract_id = $contract_id LIMIT 1");
+
+        logAudit("Contract", "Expire", "Cron marked contract $contract_name as Expired (manual renewal required)", $client_id, $contract_id);
+
+        appNotify("Contract Expired", "Contract $contract_name for $client_name has expired and requires manual renewal", "/agent/contract.php?contract_id=$contract_id", $client_id);
+    }
+}
+
+
+/*
+ * ###############################################################################################################
+ *  VENDOR SEAT SYNC — Huntress, Level.io, Sherweb
+ * ###############################################################################################################
+ */
+
+// HUNTRESS — sync MDR / SAT / ITDR seat counts into software records
+$huntress_settings = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT config_huntress_api_key, config_huntress_api_secret FROM settings WHERE company_id = 1"));
+$huntress_api_key    = trim($huntress_settings['config_huntress_api_key'] ?? '');
+$huntress_api_secret = trim($huntress_settings['config_huntress_api_secret'] ?? '');
+
+if ($huntress_api_key && $huntress_api_secret) {
+
+    $auth_header = 'Authorization: Basic ' . base64_encode("$huntress_api_key:$huntress_api_secret");
+
+    // Collect all software records that need a Huntress sync, grouped by org ID
+    // 'Huntress' is the legacy value — treated as MDR
+    $sql_huntress_sw = mysqli_query($mysqli, "
+        SELECT software_id, software_name, software_sync_source, software_sync_external_id
+        FROM software
+        WHERE software_sync_source IN ('Huntress', 'Huntress MDR', 'Huntress SAT', 'Huntress ITDR')
+        AND software_sync_external_id IS NOT NULL
+        AND software_sync_external_id != ''
+        AND software_archived_at IS NULL
+    ");
+
+    $org_map = []; // org_id => [['software_id', 'software_name', 'sync_source'], ...]
+    while ($sw = mysqli_fetch_assoc($sql_huntress_sw)) {
+        $org_id = intval($sw['software_sync_external_id']);
+        $org_map[$org_id][] = $sw;
+    }
+
+    // One API call per org regardless of how many products are tracked for that client
+    foreach ($org_map as $org_id => $sw_list) {
+
+        $url = "https://api.huntress.io/v1/organizations/$org_id";
+        $ctx = stream_context_create(['http' => [
+            'method'        => 'GET',
+            'header'        => $auth_header . "\r\nContent-Type: application/json\r\n",
+            'timeout'       => 15,
+            'ignore_errors' => true,
+        ]]);
+
+        $result = @file_get_contents($url, false, $ctx);
+
+        if ($result === false) {
+            logApp("Huntress Sync", "error", "API request failed for org $org_id");
+            continue;
+        }
+
+        $data = json_decode($result, true);
+        $org  = $data['organization'] ?? null;
+
+        if (!$org) {
+            logApp("Huntress Sync", "error", "Unexpected API response for org $org_id: " . substr($result, 0, 200));
+            continue;
+        }
+
+        $usages = $org['actual_usages'] ?? [];
+
+        $mdr_count  = intval($usages['edr']['billable_agents_count'] ?? 0);
+        $sat_count  = intval($usages['sat']['learners_count'] ?? 0);
+        $itdr_count = 0;
+        foreach ($usages['itdr'] ?? [] as $tenant) {
+            $itdr_count += intval($tenant['billable_identities_count'] ?? 0);
+        }
+
+        foreach ($sw_list as $sw) {
+            $software_id   = intval($sw['software_id']);
+            $software_name = escapeSql($sw['software_name']);
+            $source        = $sw['software_sync_source'];
+
+            if ($source === 'Huntress SAT') {
+                $seat_count = $sat_count;
+            } elseif ($source === 'Huntress ITDR') {
+                $seat_count = $itdr_count;
+            } else {
+                $seat_count = $mdr_count; // 'Huntress MDR' and legacy 'Huntress'
+            }
+
+            mysqli_query($mysqli, "UPDATE software SET software_seats = $seat_count, software_sync_last_at = NOW() WHERE software_id = $software_id");
+
+            syncRecurringInvoiceItemsBySoftwareId($software_id, $seat_count);
+
+            logApp("Huntress Sync", "info", "Updated '$software_name' (id: $software_id) to $seat_count seats [$source] from Huntress org $org_id");
+        }
+    }
+
+    // Once every client's seats are up to date, recalc any consolidated vendor expense per product
+    syncRecurringExpensesBySyncSource('Huntress MDR');
+    syncRecurringExpensesBySyncSource('Huntress');
+    syncRecurringExpensesBySyncSource('Huntress SAT');
+    syncRecurringExpensesBySyncSource('Huntress ITDR');
+}
+
+// LEVEL.IO — sync device counts per client group into software seat fields
+$levelio_settings = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT config_levelio_api_key FROM settings WHERE company_id = 1"));
+$levelio_api_key  = trim($levelio_settings['config_levelio_api_key'] ?? '');
+
+if ($levelio_api_key) {
+
+    $sql_levelio_sw = mysqli_query($mysqli, "
+        SELECT software_id, software_name, software_sync_external_id
+        FROM software
+        WHERE software_sync_source = 'Level.io'
+        AND software_sync_external_id IS NOT NULL
+        AND software_sync_external_id != ''
+        AND software_archived_at IS NULL
+    ");
+
+    while ($sw = mysqli_fetch_assoc($sql_levelio_sw)) {
+        $software_id   = intval($sw['software_id']);
+        $software_name = escapeSql($sw['software_name']);
+        $group_id      = escapeSql($sw['software_sync_external_id']);
+
+        $url = "https://api.level.io/v2/groups/" . urlencode($group_id);
+        $ctx = stream_context_create(['http' => [
+            'method'        => 'GET',
+            'header'        => "Authorization: $levelio_api_key\r\nAccept: application/json\r\n",
+            'timeout'       => 15,
+            'ignore_errors' => true,
+        ]]);
+
+        $result = @file_get_contents($url, false, $ctx);
+
+        if ($result === false) {
+            logApp("Level.io Sync", "error", "API request failed for software_id $software_id (group $group_id)");
+            continue;
+        }
+
+        $data = json_decode($result, true);
+
+        if (!isset($data['descendent_device_count'])) {
+            logApp("Level.io Sync", "error", "Unexpected API response for software_id $software_id: " . substr($result, 0, 200));
+            continue;
+        }
+
+        $seat_count = intval($data['descendent_device_count']);
+
+        mysqli_query($mysqli, "UPDATE software SET software_seats = $seat_count, software_sync_last_at = NOW() WHERE software_id = $software_id");
+
+        syncRecurringInvoiceItemsBySoftwareId($software_id, $seat_count);
+
+        logApp("Level.io Sync", "info", "Updated '$software_name' (id: $software_id) to $seat_count devices from Level.io group $group_id");
+    }
+
+    // Once every client's seats are up to date, recalc any consolidated vendor expense for Level.io
+    syncRecurringExpensesBySyncSource('Level.io');
+}
+
+// SHERWEB — sync per-subscription seat counts, and roll up receivable charges into a consolidated expense
+$sherweb_settings = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT config_sherweb_client_id, config_sherweb_client_secret, config_sherweb_subscription_key FROM settings WHERE company_id = 1"));
+$sherweb_client_id        = trim($sherweb_settings['config_sherweb_client_id'] ?? '');
+$sherweb_client_secret    = trim($sherweb_settings['config_sherweb_client_secret'] ?? '');
+$sherweb_subscription_key = trim($sherweb_settings['config_sherweb_subscription_key'] ?? '');
+
+if ($sherweb_client_id && $sherweb_client_secret && $sherweb_subscription_key) {
+
+    // OAuth client-credentials token — lasts ~1hr, simplest to fetch fresh each cron run
+    $sherweb_token_body = http_build_query([
+        'grant_type'    => 'client_credentials',
+        'client_id'     => $sherweb_client_id,
+        'client_secret' => $sherweb_client_secret,
+        'scope'         => 'service-provider',
+    ]);
+
+    $sherweb_token_ctx = stream_context_create(['http' => [
+        'method'        => 'POST',
+        'header'        => "Content-Type: application/x-www-form-urlencoded\r\nAccept: application/json\r\n",
+        'content'       => $sherweb_token_body,
+        'timeout'       => 15,
+        'ignore_errors' => true,
+    ]]);
+
+    $sherweb_token_result = @file_get_contents('https://api.sherweb.com/auth/oidc/connect/token', false, $sherweb_token_ctx);
+    $sherweb_token_data   = $sherweb_token_result ? json_decode($sherweb_token_result, true) : null;
+    $sherweb_access_token = $sherweb_token_data['access_token'] ?? '';
+
+    if (!$sherweb_access_token) {
+        logApp("Sherweb Sync", "error", "Failed to obtain OAuth access token");
+    } else {
+
+        $sherweb_headers = "Authorization: Bearer $sherweb_access_token\r\nOcp-Apim-Subscription-Key: $sherweb_subscription_key\r\nAccept: application/json\r\n";
+
+        $sql_sherweb_sw = mysqli_query($mysqli, "
+            SELECT software_id, software_name, software_sync_external_id
+            FROM software
+            WHERE software_sync_source = 'Sherweb'
+            AND software_sync_external_id IS NOT NULL
+            AND software_sync_external_id != ''
+            AND software_archived_at IS NULL
+        ");
+
+        $sherweb_customer_map = []; // customerId => [['software_id', 'software_name', 'subscription_id'], ...]
+        while ($sw = mysqli_fetch_assoc($sql_sherweb_sw)) {
+            $parts = explode(':', $sw['software_sync_external_id'], 2);
+
+            if (count($parts) !== 2) {
+                logApp("Sherweb Sync", "error", "Invalid External ID format for software_id {$sw['software_id']} (expected customerId:subscriptionId)");
+                continue;
+            }
+
+            [$sherweb_customer_id, $sherweb_subscription_id] = $parts;
+
+            $sherweb_customer_map[$sherweb_customer_id][] = [
+                'software_id'     => intval($sw['software_id']),
+                'software_name'   => escapeSql($sw['software_name']),
+                'subscription_id' => $sherweb_subscription_id,
+            ];
+        }
+
+        $sherweb_total_charge = 0;
+        $sherweb_total_seats  = 0;
+
+        foreach ($sherweb_customer_map as $sherweb_customer_id => $sw_list) {
+            $customer_id_enc = urlencode($sherweb_customer_id);
+
+            $sub_ctx = stream_context_create(['http' => [
+                'method'        => 'GET',
+                'header'        => $sherweb_headers,
+                'timeout'       => 15,
+                'ignore_errors' => true,
+            ]]);
+
+            $sub_result = @file_get_contents("https://api.sherweb.com/service-provider/v1/billing/subscriptions?customerId=$customer_id_enc", false, $sub_ctx);
+
+            if ($sub_result === false) {
+                logApp("Sherweb Sync", "error", "Subscriptions request failed for customer $sherweb_customer_id");
+            } else {
+                $subscriptions = json_decode($sub_result, true)['items'] ?? [];
+
+                foreach ($sw_list as $sw) {
+                    $matched = null;
+                    foreach ($subscriptions as $sub) {
+                        if (($sub['id'] ?? '') === $sw['subscription_id']) {
+                            $matched = $sub;
+                            break;
+                        }
+                    }
+
+                    if (!$matched) {
+                        logApp("Sherweb Sync", "error", "Subscription {$sw['subscription_id']} not found for customer $sherweb_customer_id (software_id {$sw['software_id']})");
+                        continue;
+                    }
+
+                    $seat_count = intval($matched['quantity'] ?? 0);
+
+                    mysqli_query($mysqli, "UPDATE software SET software_seats = $seat_count, software_sync_last_at = NOW() WHERE software_id = {$sw['software_id']}");
+
+                    syncRecurringInvoiceItemsBySoftwareId($sw['software_id'], $seat_count);
+
+                    $sherweb_total_seats += $seat_count;
+
+                    logApp("Sherweb Sync", "info", "Updated '{$sw['software_name']}' (id: {$sw['software_id']}) to $seat_count seats from Sherweb subscription {$sw['subscription_id']}");
+                }
+            }
+
+            $charges_ctx = stream_context_create(['http' => [
+                'method'        => 'GET',
+                'header'        => $sherweb_headers,
+                'timeout'       => 15,
+                'ignore_errors' => true,
+            ]]);
+
+            $charges_result = @file_get_contents("https://api.sherweb.com/service-provider/v1/billing/receivable-charges?customerId=$customer_id_enc", false, $charges_ctx);
+
+            if ($charges_result === false) {
+                logApp("Sherweb Sync", "error", "Receivable charges request failed for customer $sherweb_customer_id");
+                continue;
+            }
+
+            $charges = json_decode($charges_result, true)['charges'] ?? [];
+
+            foreach ($charges as $charge) {
+                $sherweb_total_charge += floatval($charge['costPriceProrated'] ?? $charge['costPrice'] ?? 0);
+            }
+        }
+
+        if (!empty($sherweb_customer_map)) {
+            $sherweb_total_charge_rounded = round($sherweb_total_charge, 2);
+
+            mysqli_query($mysqli, "UPDATE recurring_expenses SET
+                recurring_expense_amount = $sherweb_total_charge_rounded,
+                recurring_expense_quantity = $sherweb_total_seats
+                WHERE recurring_expense_sync_source = 'Sherweb'
+                AND recurring_expense_archived_at IS NULL
+            ");
+
+            logApp("Sherweb Sync", "info", "Consolidated Sherweb bill updated to $sherweb_total_charge_rounded across " . count($sherweb_customer_map) . " customer(s), $sherweb_total_seats total seats");
+        }
+    }
+}
 
 
 /*

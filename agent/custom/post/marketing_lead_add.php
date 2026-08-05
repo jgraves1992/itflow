@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('FROM_POST_HANDLER') or die('Direct access not permitted');
 
 if (!isset($_POST['add_marketing_lead'])) return;
@@ -6,24 +6,24 @@ if (!isset($_POST['add_marketing_lead'])) return;
 validateCSRFToken($_POST['csrf_token'] ?? '');
 enforceUserPermission('module_client');
 
-$lead_name    = sanitizeInput($_POST['lead_name'] ?? '');
-$lead_email   = sanitizeInput($_POST['lead_email'] ?? '');
-$lead_company = sanitizeInput($_POST['lead_company'] ?? '');
-$lead_phone   = sanitizeInput($_POST['lead_phone'] ?? '');
-$lead_source  = sanitizeInput($_POST['lead_source'] ?? '');
-$lead_notes   = sanitizeInput($_POST['lead_notes'] ?? '');
+$lead_name    = escapeSql($_POST['lead_name'] ?? '');
+$lead_email   = escapeSql($_POST['lead_email'] ?? '');
+$lead_company = escapeSql($_POST['lead_company'] ?? '');
+$lead_phone   = escapeSql($_POST['lead_phone'] ?? '');
+$lead_source  = escapeSql($_POST['lead_source'] ?? '');
+$lead_notes   = escapeSql($_POST['lead_notes'] ?? '');
 
 $valid_statuses = ['new', 'contacted', 'qualified', 'converted', 'lost'];
 $lead_status = in_array($_POST['lead_status'] ?? '', $valid_statuses) ? $_POST['lead_status'] : 'new';
 
 if (!$lead_name || !$lead_email) {
-    flash_alert('Name and email are required.', 'error');
+    flashAlert('Name and email are required.', 'error');
     header('Location: /agent/custom/marketing_leads.php');
     exit;
 }
 
 if (!filter_var($lead_email, FILTER_VALIDATE_EMAIL)) {
-    flash_alert('Invalid email address.', 'error');
+    flashAlert('Invalid email address.', 'error');
     header('Location: /agent/custom/marketing_leads.php');
     exit;
 }
@@ -32,12 +32,12 @@ $existing = mysqli_fetch_assoc(mysqli_query($mysqli,
     "SELECT lead_id FROM marketing_leads WHERE lead_email = '$lead_email' AND lead_archived_at IS NULL"));
 
 if ($existing) {
-    flash_alert('A lead with that email already exists.', 'error');
+    flashAlert('A lead with that email already exists.', 'error');
     header('Location: /agent/custom/marketing_leads.php');
     exit;
 }
 
-// sanitizeInput() already escapes for SQL — do not re-escape, or quotes/backslashes get double-escaped into the stored value
+// escapeSql() already escapes for SQL — do not re-escape, or quotes/backslashes get double-escaped into the stored value
 $token = mysqli_real_escape_string($mysqli, bin2hex(random_bytes(32)));
 
 mysqli_query($mysqli,
@@ -79,6 +79,6 @@ try {
     // ITFlow client creation failed — marketing lead was still saved
 }
 
-flash_alert("Lead <strong>$lead_name</strong> added successfully.");
+flashAlert("Lead <strong>$lead_name</strong> added successfully.");
 header("Location: /agent/custom/marketing_lead_details.php?id=$new_id");
 exit;

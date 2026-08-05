@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 // If client_id is in URI then show client Side Bar and client header
 if (isset($_GET['client_id'])) {
@@ -36,33 +36,33 @@ if (mysqli_num_rows($sql) == 0) {
 $row = mysqli_fetch_assoc($sql);
 
 $contract_id          = intval($row['contract_id']);
-$contract_name        = nullable_htmlentities($row['contract_name']);
-$contract_status      = nullable_htmlentities($row['contract_status']);
-$contract_type        = nullable_htmlentities($row['contract_type']);
+$contract_name        = escapeHtml($row['contract_name']);
+$contract_status      = escapeHtml($row['contract_status']);
+$contract_type        = escapeHtml($row['contract_type']);
 $contract_details     = $row['contract_details'];
-$contract_start       = nullable_htmlentities($row['contract_start_date']);
-$contract_end         = nullable_htmlentities($row['contract_end_date']);
-$contract_renewal     = nullable_htmlentities($row['contract_renewal_frequency']);
-$contract_net_terms   = nullable_htmlentities($row['contract_net_terms']);
-$contract_support_hrs = nullable_htmlentities($row['contract_support_hours']);
+$contract_start       = escapeHtml($row['contract_start_date']);
+$contract_end         = escapeHtml($row['contract_end_date']);
+$contract_renewal     = escapeHtml($row['contract_renewal_frequency']);
+$contract_net_terms   = escapeHtml($row['contract_net_terms']);
+$contract_support_hrs = escapeHtml($row['contract_support_hours']);
 $contract_rate_std    = floatval($row['contract_rate_standard']);
 $contract_rate_ah     = floatval($row['contract_rate_after_hours']);
-$sla_low_resp         = nullable_htmlentities($row['contract_sla_low_response_time']);
-$sla_low_res          = nullable_htmlentities($row['contract_sla_low_resolution_time']);
-$sla_med_resp         = nullable_htmlentities($row['contract_sla_medium_response_time']);
-$sla_med_res          = nullable_htmlentities($row['contract_sla_medium_resolution_time']);
-$sla_high_resp        = nullable_htmlentities($row['contract_sla_high_response_time']);
-$sla_high_res         = nullable_htmlentities($row['contract_sla_high_resolution_time']);
-$snap_client_name     = nullable_htmlentities($row['contract_client_name']);
-$snap_client_addr     = nullable_htmlentities($row['contract_client_address']);
-$snap_client_email    = nullable_htmlentities($row['contract_client_email']);
-$snap_client_phone    = nullable_htmlentities($row['contract_client_phone']);
-$snap_contact_name    = nullable_htmlentities($row['contract_contact_name']);
-$snap_agent_name      = nullable_htmlentities($row['contract_agent_name']);
-$contract_created_at  = nullable_htmlentities($row['contract_created_at']);
-$contract_updated_at  = nullable_htmlentities($row['contract_updated_at']);
+$sla_low_resp         = escapeHtml($row['contract_sla_low_response_time']);
+$sla_low_res          = escapeHtml($row['contract_sla_low_resolution_time']);
+$sla_med_resp         = escapeHtml($row['contract_sla_medium_response_time']);
+$sla_med_res          = escapeHtml($row['contract_sla_medium_resolution_time']);
+$sla_high_resp        = escapeHtml($row['contract_sla_high_response_time']);
+$sla_high_res         = escapeHtml($row['contract_sla_high_resolution_time']);
+$snap_client_name     = escapeHtml($row['contract_client_name']);
+$snap_client_addr     = escapeHtml($row['contract_client_address']);
+$snap_client_email    = escapeHtml($row['contract_client_email']);
+$snap_client_phone    = escapeHtml($row['contract_client_phone']);
+$snap_contact_name    = escapeHtml($row['contract_contact_name']);
+$snap_agent_name      = escapeHtml($row['contract_agent_name']);
+$contract_created_at  = escapeHtml($row['contract_created_at']);
+$contract_updated_at  = escapeHtml($row['contract_updated_at']);
 $row_client_id        = intval($row['client_id']);
-$row_client_name      = nullable_htmlentities($row['client_name']);
+$row_client_name      = escapeHtml($row['client_name']);
 
 $client_url = isset($_GET['client_id']) ? "client_id=$client_id&" : "";
 

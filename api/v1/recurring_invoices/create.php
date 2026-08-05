@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /*
  * API - recurring_invoices/create.php
@@ -67,7 +67,7 @@ $frequency_input = strtolower(trim($_POST['frequency'] ?? ''));
 $frequency       = $frequency_map[$frequency_input] ?? '';
 
 $next_date = (isset($_POST['next_date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['next_date']))
-    ? sanitizeInput($_POST['next_date'])
+    ? escapeSql($_POST['next_date'])
     : '';
 
 // email_notify defaults off — Stripe (or whatever upstream) sends its own emails
@@ -156,8 +156,8 @@ if ($insert_sql) {
         ");
     }
 
-    logAction("Recurring Invoice", "Create", "Recurring invoice $config_recurring_invoice_prefix$new_recurring_number created via API ($api_key_name)", $client_id, $insert_id);
-    logAction("API", "Success", "Created recurring invoice $config_recurring_invoice_prefix$new_recurring_number via API ($api_key_name)", $client_id);
+    logAudit("Recurring Invoice", "Create", "Recurring invoice $config_recurring_invoice_prefix$new_recurring_number created via API ($api_key_name)", $client_id, $insert_id);
+    logAudit("API", "Success", "Created recurring invoice $config_recurring_invoice_prefix$new_recurring_number via API ($api_key_name)", $client_id);
 
     $return_arr['success'] = "True";
     $return_arr['count']   = "1";

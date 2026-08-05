@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /*
  * API - invoice_model.php
@@ -28,14 +28,14 @@
 // Core fields
 // ------------------------------------------------------------------
 
-$scope = isset($_POST['scope']) ? sanitizeInput($_POST['scope']) : '';
+$scope = isset($_POST['scope']) ? escapeSql($_POST['scope']) : '';
 
 $date = (isset($_POST['date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['date']))
-    ? sanitizeInput($_POST['date'])
+    ? escapeSql($_POST['date'])
     : date('Y-m-d');
 
 $discount_amount = isset($_POST['discount_amount']) ? max(0, floatval($_POST['discount_amount'])) : 0;
-$note            = isset($_POST['note'])            ? sanitizeInput($_POST['note'])            : '';
+$note            = isset($_POST['note'])            ? escapeSql($_POST['note'])            : '';
 $category_id     = isset($_POST['category_id'])     ? intval($_POST['category_id'])            : 0;
 
 // Email suppressed by default — Stripe (or whatever caller) handles its own notifications
@@ -50,13 +50,13 @@ $client_row = mysqli_fetch_assoc(mysqli_query($mysqli,
 ));
 
 $currency_code = (isset($_POST['currency_code']) && !empty($_POST['currency_code']))
-    ? sanitizeInput($_POST['currency_code'])
-    : ($client_row ? sanitizeInput($client_row['client_currency_code']) : 'USD');
+    ? escapeSql($_POST['currency_code'])
+    : ($client_row ? escapeSql($client_row['client_currency_code']) : 'USD');
 
 $net_terms = $client_row ? intval($client_row['client_net_terms']) : 0;
 
 $due_date = (isset($_POST['due_date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['due_date']))
-    ? sanitizeInput($_POST['due_date'])
+    ? escapeSql($_POST['due_date'])
     : date('Y-m-d', strtotime("$date +$net_terms days"));
 
 // ------------------------------------------------------------------
@@ -68,10 +68,10 @@ $parsed_items  = [];
 $items_total   = 0;
 
 foreach ($raw_items as $item) {
-    $item_name = sanitizeInput($item['name'] ?? '');
+    $item_name = escapeSql($item['name'] ?? '');
     if (!$item_name) continue;
 
-    $item_description = sanitizeInput($item['description'] ?? '');
+    $item_description = escapeSql($item['description'] ?? '');
     $item_quantity    = max(0, floatval($item['quantity'] ?? 1));
     $item_price       = floatval($item['price'] ?? 0);
     $item_subtotal    = round($item_quantity * $item_price, 2);

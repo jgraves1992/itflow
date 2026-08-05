@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 /*
  * API - invoices/create.php
@@ -37,9 +37,9 @@ require_once 'invoice_model.php';
 // mark_paid: create invoice already in Paid status and record a payment entry atomically
 $mark_paid          = !empty($_POST['mark_paid']) && $_POST['mark_paid'] !== 'false' && $_POST['mark_paid'] !== '0';
 $payment_date       = (isset($_POST['payment_date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['payment_date']))
-                        ? sanitizeInput($_POST['payment_date']) : date('Y-m-d');
-$payment_method     = isset($_POST['payment_method'])     ? sanitizeInput($_POST['payment_method'])     : 'Stripe';
-$payment_reference  = isset($_POST['payment_reference'])  ? sanitizeInput($_POST['payment_reference'])  : '';
+                        ? escapeSql($_POST['payment_date']) : date('Y-m-d');
+$payment_method     = isset($_POST['payment_method'])     ? escapeSql($_POST['payment_method'])     : 'Stripe';
+$payment_reference  = isset($_POST['payment_reference'])  ? escapeSql($_POST['payment_reference'])  : '';
 $payment_account_id = isset($_POST['payment_account_id']) ? intval($_POST['payment_account_id'])        : 0;
 
 // Optional gateway fee expense — recorded alongside payment when mark_paid is true
@@ -136,7 +136,7 @@ if ($insert_sql) {
 
         // Record gateway fee as expense if all three fields provided
         if ($expense_vendor_id > 0 && $expense_category_id > 0 && $expense_amount > 0) {
-            $expense_desc = sanitizeInput("Gateway fee ($payment_method) - ref: $payment_reference");
+            $expense_desc = escapeSql("Gateway fee ($payment_method) - ref: $payment_reference");
             mysqli_query($mysqli, "
                 INSERT INTO expenses SET
                     expense_date          = '$payment_date',
@@ -159,8 +159,8 @@ if ($insert_sql) {
             WHERE contact_client_id = $client_id AND contact_primary = 1 LIMIT 1
         "));
         if ($contact_row && !empty($contact_row['contact_email'])) {
-            $contact_name  = sanitizeInput($contact_row['contact_name']);
-            $contact_email = sanitizeInput($contact_row['contact_email']);
+            $contact_name  = escapeSql($contact_row['contact_name']);
+            $contact_email = escapeSql($contact_row['contact_email']);
             $base_url      = isset($config_base_url) ? $config_base_url : $_SERVER['HTTP_HOST'];
             $subject = "Invoice $config_invoice_prefix$new_invoice_number";
             $body    = "Hello $contact_name,<br><br>An invoice regarding \"$scope\" has been generated.<br><br>"
@@ -182,8 +182,8 @@ if ($insert_sql) {
         }
     }
 
-    logAction("Invoice", "Create", "Invoice $config_invoice_prefix$new_invoice_number created via API ($api_key_name)", $client_id, $insert_id);
-    logAction("API", "Success", "Created invoice $config_invoice_prefix$new_invoice_number via API ($api_key_name)", $client_id);
+    logAudit("Invoice", "Create", "Invoice $config_invoice_prefix$new_invoice_number created via API ($api_key_name)", $client_id, $insert_id);
+    logAudit("API", "Success", "Created invoice $config_invoice_prefix$new_invoice_number via API ($api_key_name)", $client_id);
 
     $return_arr['success'] = "True";
     $return_arr['count']   = "1";

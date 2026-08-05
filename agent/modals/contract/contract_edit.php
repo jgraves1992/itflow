@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 require_once '../../../includes/modal_header.php';
 
@@ -52,7 +52,7 @@ ob_start();
                             <span class="input-group-text"><i class="fa fa-fw fa-file-contract"></i></span>
                         </div>
                         <input type="text" class="form-control" name="contract_name"
-                            value="<?= nullable_htmlentities($row['contract_name']) ?>" maxlength="255" required autofocus>
+                            value="<?= escapeHtml($row['contract_name']) ?>" maxlength="255" required autofocus>
                     </div>
                 </div>
 
@@ -93,7 +93,7 @@ ob_start();
                                 <span class="input-group-text"><i class="fa fa-fw fa-calendar"></i></span>
                             </div>
                             <input type="date" class="form-control" name="contract_start_date"
-                                max="2999-12-31" value="<?= nullable_htmlentities($row['contract_start_date']) ?>">
+                                max="2999-12-31" value="<?= escapeHtml($row['contract_start_date']) ?>">
                         </div>
                     </div>
                     <div class="form-group col-md-6">
@@ -103,7 +103,7 @@ ob_start();
                                 <span class="input-group-text"><i class="fa fa-fw fa-calendar-times"></i></span>
                             </div>
                             <input type="date" class="form-control" name="contract_end_date"
-                                max="2999-12-31" value="<?= nullable_htmlentities($row['contract_end_date']) ?>">
+                                max="2999-12-31" value="<?= escapeHtml($row['contract_end_date']) ?>">
                         </div>
                     </div>
                 </div>
@@ -136,7 +136,7 @@ ob_start();
                             <span class="input-group-text"><i class="fa fa-fw fa-building"></i></span>
                         </div>
                         <input type="text" class="form-control" name="contract_client_name"
-                            value="<?= nullable_htmlentities($row['contract_client_name']) ?>" maxlength="255">
+                            value="<?= escapeHtml($row['contract_client_name']) ?>" maxlength="255">
                     </div>
                 </div>
 
@@ -146,7 +146,7 @@ ob_start();
                         <div class="input-group-prepend">
                             <span class="input-group-text"><i class="fa fa-fw fa-map-marker-alt"></i></span>
                         </div>
-                        <textarea class="form-control" name="contract_client_address" rows="3"><?= nullable_htmlentities($row['contract_client_address']) ?></textarea>
+                        <textarea class="form-control" name="contract_client_address" rows="3"><?= escapeHtml($row['contract_client_address']) ?></textarea>
                     </div>
                 </div>
 
@@ -158,7 +158,7 @@ ob_start();
                                 <span class="input-group-text"><i class="fa fa-fw fa-envelope"></i></span>
                             </div>
                             <input type="email" class="form-control" name="contract_client_email"
-                                value="<?= nullable_htmlentities($row['contract_client_email']) ?>" maxlength="255">
+                                value="<?= escapeHtml($row['contract_client_email']) ?>" maxlength="255">
                         </div>
                     </div>
                     <div class="form-group col-md-6">
@@ -168,7 +168,7 @@ ob_start();
                                 <span class="input-group-text"><i class="fa fa-fw fa-phone"></i></span>
                             </div>
                             <input type="text" class="form-control" name="contract_client_phone"
-                                value="<?= nullable_htmlentities($row['contract_client_phone']) ?>" maxlength="100">
+                                value="<?= escapeHtml($row['contract_client_phone']) ?>" maxlength="100">
                         </div>
                     </div>
                 </div>
@@ -181,7 +181,7 @@ ob_start();
                                 <span class="input-group-text"><i class="fa fa-fw fa-user"></i></span>
                             </div>
                             <input type="text" class="form-control" name="contract_contact_name"
-                                value="<?= nullable_htmlentities($row['contract_contact_name']) ?>" maxlength="255">
+                                value="<?= escapeHtml($row['contract_contact_name']) ?>" maxlength="255">
                         </div>
                     </div>
                     <div class="form-group col-md-6">
@@ -191,7 +191,7 @@ ob_start();
                                 <span class="input-group-text"><i class="fa fa-fw fa-user-tie"></i></span>
                             </div>
                             <input type="text" class="form-control" name="contract_agent_name"
-                                value="<?= nullable_htmlentities($row['contract_agent_name']) ?>" maxlength="255">
+                                value="<?= escapeHtml($row['contract_agent_name']) ?>" maxlength="255">
                         </div>
                     </div>
                 </div>
@@ -298,7 +298,7 @@ ob_start();
                             <span class="input-group-text"><i class="fa fa-fw fa-file-invoice-dollar"></i></span>
                         </div>
                         <input type="text" class="form-control" name="contract_net_terms"
-                            value="<?= nullable_htmlentities($row['contract_net_terms']) ?>" maxlength="50">
+                            value="<?= escapeHtml($row['contract_net_terms']) ?>" maxlength="50">
                     </div>
                 </div>
 
@@ -309,7 +309,7 @@ ob_start();
                             <span class="input-group-text"><i class="fa fa-fw fa-calendar-check"></i></span>
                         </div>
                         <input type="text" class="form-control" name="contract_support_hours"
-                            value="<?= nullable_htmlentities($row['contract_support_hours']) ?>" maxlength="100">
+                            value="<?= escapeHtml($row['contract_support_hours']) ?>" maxlength="100">
                     </div>
                 </div>
             </div>

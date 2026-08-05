@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 defined('FROM_POST_HANDLER') or die('Direct access not permitted');
 
 if (!isset($_POST['bulk_enroll_marketing_leads'])) return;
@@ -11,7 +11,7 @@ $lead_ids    = array_filter(array_unique($lead_ids));
 $sequence_id = intval($_POST['sequence_id'] ?? 0);
 
 if (empty($lead_ids) || !$sequence_id) {
-    flash_alert('Select at least one lead and a sequence.', 'error');
+    flashAlert('Select at least one lead and a sequence.', 'error');
     header('Location: /agent/custom/marketing_leads.php');
     exit;
 }
@@ -21,7 +21,7 @@ $sequence = mysqli_fetch_assoc(mysqli_query($mysqli,
     "SELECT * FROM marketing_sequences WHERE sequence_id = $sequence_id AND sequence_active = 1 AND sequence_archived_at IS NULL"));
 
 if (!$sequence) {
-    flash_alert('Sequence not found or inactive.', 'error');
+    flashAlert('Sequence not found or inactive.', 'error');
     header('Location: /agent/custom/marketing_leads.php');
     exit;
 }
@@ -32,7 +32,7 @@ $first_step = mysqli_fetch_assoc(mysqli_query($mysqli,
      WHERE step_sequence_id = $sequence_id ORDER BY step_order ASC LIMIT 1"));
 
 if (!$first_step) {
-    flash_alert('Sequence has no steps. Add at least one email step first.', 'error');
+    flashAlert('Sequence has no steps. Add at least one email step first.', 'error');
     header('Location: /agent/custom/marketing_leads.php');
     exit;
 }
@@ -74,12 +74,12 @@ foreach ($lead_ids as $lead_id) {
     $enrolled_count++;
 }
 
-$sequence_name = nullable_htmlentities($sequence['sequence_name']);
+$sequence_name = escapeHtml($sequence['sequence_name']);
 $message = "$enrolled_count lead(s) enrolled in <strong>$sequence_name</strong>.";
 if ($skipped_count > 0) {
     $message .= " $skipped_count skipped (already enrolled or unsubscribed).";
 }
 
-flash_alert($message);
+flashAlert($message);
 header('Location: /agent/custom/marketing_leads.php');
 exit;

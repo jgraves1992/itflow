@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 // Default Column Sortby/Order Filter
 $sort = "contract_start_date";
@@ -21,7 +21,7 @@ enforceUserPermission('module_sales');
 // Status filter
 $status_filter = '';
 if (!empty($_GET['status'])) {
-    $status = sanitizeInput($_GET['status']);
+    $status = escapeSql($_GET['status']);
     $status_filter = "AND contract_status = '$status'";
 }
 
@@ -115,13 +115,13 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 <input type="hidden" name="client_id" value="<?= $client_id ?>">
             <?php } ?>
             <?php if (!empty($_GET['status'])) { ?>
-                <input type="hidden" name="status" value="<?= nullable_htmlentities($_GET['status']) ?>">
+                <input type="hidden" name="status" value="<?= escapeHtml($_GET['status']) ?>">
             <?php } ?>
             <div class="row">
                 <div class="col-sm-4">
                     <div class="input-group">
                         <input type="search" class="form-control" name="q"
-                            value="<?php if (isset($q)) { echo stripslashes(nullable_htmlentities($q)); } ?>"
+                            value="<?php if (isset($q)) { echo stripslashes(escapeHtml($q)); } ?>"
                             placeholder="Search Contracts">
                         <div class="input-group-append">
                             <button class="btn btn-primary"><i class="fa fa-search"></i></button>
@@ -131,7 +131,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 <?php if (!empty($_GET['status'])) { ?>
                     <div class="col-sm-4 pt-2">
                         <a href="?<?= $client_url ?>" class="text-secondary">
-                            <i class="fas fa-times mr-1"></i>Clear filter: <?= nullable_htmlentities($_GET['status']) ?>
+                            <i class="fas fa-times mr-1"></i>Clear filter: <?= escapeHtml($_GET['status']) ?>
                         </a>
                     </div>
                 <?php } ?>
@@ -189,17 +189,17 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                 while ($row = mysqli_fetch_assoc($sql)) {
                     $contract_id       = intval($row['contract_id']);
-                    $contract_name     = nullable_htmlentities($row['contract_name']);
-                    $contract_status   = nullable_htmlentities($row['contract_status']);
-                    $contract_type     = nullable_htmlentities($row['contract_type']);
-                    $contract_start    = nullable_htmlentities($row['contract_start_date']);
-                    $contract_end      = nullable_htmlentities($row['contract_end_date']);
-                    $contract_renewal  = nullable_htmlentities($row['contract_renewal_frequency']);
-                    $sla_low_resp      = nullable_htmlentities($row['contract_sla_low_response_time']);
-                    $sla_med_resp      = nullable_htmlentities($row['contract_sla_medium_response_time']);
-                    $sla_high_resp     = nullable_htmlentities($row['contract_sla_high_response_time']);
+                    $contract_name     = escapeHtml($row['contract_name']);
+                    $contract_status   = escapeHtml($row['contract_status']);
+                    $contract_type     = escapeHtml($row['contract_type']);
+                    $contract_start    = escapeHtml($row['contract_start_date']);
+                    $contract_end      = escapeHtml($row['contract_end_date']);
+                    $contract_renewal  = escapeHtml($row['contract_renewal_frequency']);
+                    $sla_low_resp      = escapeHtml($row['contract_sla_low_response_time']);
+                    $sla_med_resp      = escapeHtml($row['contract_sla_medium_response_time']);
+                    $sla_high_resp     = escapeHtml($row['contract_sla_high_response_time']);
                     $row_client_id     = intval($row['client_id']);
-                    $row_client_name   = nullable_htmlentities($row['client_name']);
+                    $row_client_name   = escapeHtml($row['client_name']);
 
                     switch ($contract_status) {
                         case 'Active':      $badge = 'success'; break;
