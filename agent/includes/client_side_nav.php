@@ -301,6 +301,13 @@
                         </li>
 
                         <li class="nav-item">
+                            <a href="/agent/client_autopay.php?client_id=<?= $client_id ?>" class="nav-link <?php if (basename($_SERVER["PHP_SELF"]) == "client_autopay.php") { echo "active"; } ?>">
+                                <i class="nav-icon fas fa-credit-card"></i>
+                                <p>AutoPay</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
                             <a href="/agent/contracts.php?client_id=<?php echo $client_id; ?>" class="nav-link <?php if (basename($_SERVER["PHP_SELF"]) == "contracts.php" || basename($_SERVER["PHP_SELF"]) == "contract.php") { echo "active"; } ?>">
                                 <i class="nav-icon fas fa-file-contract"></i>
                                 <p>
