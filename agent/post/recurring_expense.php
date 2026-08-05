@@ -8,7 +8,7 @@ defined('FROM_POST_HANDLER') || die("Direct file access is not allowed");
 
 if (isset($_POST['create_recurring_expense'])) {
 
-    validateCSRFToken($_POST['csrf_token']);
+    validateCSRFToken();
 
     enforceUserPermission('module_financial', 2);
 
@@ -20,11 +20,15 @@ if (isset($_POST['create_recurring_expense'])) {
     $vendor = intval($_POST['vendor']);
     $client_id = intval($_POST['client_id']);
     $category = intval($_POST['category']);
-    $description = sanitizeInput($_POST['description']);
-    $reference = sanitizeInput($_POST['reference']);
-    $sync_source = sanitizeInput($_POST['sync_source'] ?? '');
+    $description = escapeSql($_POST['description']);
+    $reference = escapeSql($_POST['reference']);
+    $sync_source = escapeSql($_POST['sync_source'] ?? '');
     $unit_cost = floatval(str_replace(',', '', $_POST['unit_cost'] ?? 0));
     $quantity = 1;
+
+    if ($client_id) {
+        enforceClientAccess();
+    }
 
     // Sherweb's amount comes directly from the distributor's billed charges, not seats x unit_cost —
     // leave it as typed for now; the next cron run corrects it from the real API total.
@@ -48,9 +52,9 @@ if (isset($_POST['create_recurring_expense'])) {
 
     $recurring_expense_id = mysqli_insert_id($mysqli);
 
-    logAction("Recurring Expense", "Create", "$session_name created recurring expense $description", $client_id, $recurring_expense_id);
+    logAudit("Recurring Expense", "Create", "$session_name created recurring expense $description", $client_id, $recurring_expense_id);
 
-    flash_alert("Recurring Expense created");
+    flashAlert("Recurring Expense created");
 
     redirect();
 
@@ -58,7 +62,7 @@ if (isset($_POST['create_recurring_expense'])) {
 
 if (isset($_POST['edit_recurring_expense'])) {
 
-    validateCSRFToken($_POST['csrf_token']);
+    validateCSRFToken();
 
     enforceUserPermission('module_financial', 2);
 
@@ -71,11 +75,15 @@ if (isset($_POST['edit_recurring_expense'])) {
     $vendor = intval($_POST['vendor']);
     $client_id = intval($_POST['client_id']);
     $category = intval($_POST['category']);
-    $description = sanitizeInput($_POST['description']);
-    $reference = sanitizeInput($_POST['reference']);
-    $sync_source = sanitizeInput($_POST['sync_source'] ?? '');
+    $description = escapeSql($_POST['description']);
+    $reference = escapeSql($_POST['reference']);
+    $sync_source = escapeSql($_POST['sync_source'] ?? '');
     $unit_cost = floatval(str_replace(',', '', $_POST['unit_cost'] ?? 0));
     $quantity = 1;
+
+    if ($client_id) {
+        enforceClientAccess();
+    }
 
     // Sherweb's amount comes directly from the distributor's billed charges, not seats x unit_cost —
     // leave it as typed for now; the next cron run corrects it from the real API total.
@@ -97,9 +105,9 @@ if (isset($_POST['edit_recurring_expense'])) {
 
     mysqli_query($mysqli,"UPDATE recurring_expenses SET recurring_expense_frequency = $frequency, recurring_expense_day = $day, recurring_expense_month = $month, recurring_expense_next_date = '$start_date', recurring_expense_description = '$description', recurring_expense_reference = '$reference', recurring_expense_amount = $amount, recurring_expense_quantity = $quantity, recurring_expense_unit_cost = " . ($sync_source ? $unit_cost : "NULL") . ", recurring_expense_currency_code = '$session_company_currency', recurring_expense_vendor_id = $vendor, recurring_expense_client_id = $client_id, recurring_expense_category_id = $category, recurring_expense_account_id = $account, recurring_expense_sync_source = " . ($sync_source ? "'$sync_source'" : "NULL") . " WHERE recurring_expense_id = $recurring_expense_id");
 
-    logAction("Recurring Expense", "Edit", "$session_name edited recurring expense $description", $client_id, $recurring_expense_id);
+    logAudit("Recurring Expense", "Edit", "$session_name edited recurring expense $description", $client_id, $recurring_expense_id);
 
-    flash_alert("Recurring Expense edited");
+    flashAlert("Recurring Expense edited");
 
     redirect();
 
@@ -107,7 +115,7 @@ if (isset($_POST['edit_recurring_expense'])) {
 
 if (isset($_GET['delete_recurring_expense'])) {
 
-    validateCSRFToken($_GET['csrf_token']);
+    validateCSRFToken();
 
     enforceUserPermission('module_financial', 2);
 
@@ -116,14 +124,14 @@ if (isset($_GET['delete_recurring_expense'])) {
     // Get Recurring Expense Details for Logging
     $sql = mysqli_query($mysqli,"SELECT recurring_expense_description, recurring_expense_client_id FROM recurring_expenses WHERE recurring_expense_id = $recurring_expense_id");
     $row = mysqli_fetch_assoc($sql);
-    $recurring_expense_description = sanitizeInput($row['recurring_expense_description']);
+    $recurring_expense_description = escapeSql($row['recurring_expense_description']);
     $client_id = intval($row['recurring_expense_client_id']);
 
     mysqli_query($mysqli,"DELETE FROM recurring_expenses WHERE recurring_expense_id = $recurring_expense_id");
 
-    logAction("Recurring Expense", "Delete", "$session_name deleted recurring expense $recurring_expense_description", $client_id);
+    logAudit("Recurring Expense", "Delete", "$session_name deleted recurring expense $recurring_expense_description", $client_id);
 
-    flash_alert("Recurring Expense deleted", 'error');
+    flashAlert("Recurring Expense deleted", 'error');
 
     redirect();
 
