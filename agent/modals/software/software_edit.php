@@ -9,7 +9,8 @@ $software_id = intval($_GET['id']);
 $sql = mysqli_query($mysqli, "SELECT software_client_id, software_created_at, software_description, software_expire,
     software_key, software_license_type, software_name, software_notes, software_purchase,
     software_purchase_reference, software_seats, software_type, software_vendor_id,
-    software_version FROM software WHERE software_id = $software_id LIMIT 1");
+    software_version, software_sync_source, software_sync_external_id, software_sync_last_at,
+    software_billing_exempt FROM software WHERE software_id = $software_id LIMIT 1");
 
 $row = mysqli_fetch_assoc($sql);
 $software_name = escapeHtml($row['software_name']);
