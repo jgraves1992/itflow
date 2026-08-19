@@ -1119,8 +1119,8 @@ if ($stripe_provider) {
 $sql_recurring_expenses = mysqli_query($mysqli, "SELECT recurring_expense_account_id, recurring_expense_amount, recurring_expense_category_id,
     recurring_expense_client_id, recurring_expense_currency_code, recurring_expense_day,
     recurring_expense_description, recurring_expense_frequency, recurring_expense_id,
-    recurring_expense_month, recurring_expense_payment_method, recurring_expense_reference,
-    recurring_expense_vendor_id FROM recurring_expenses WHERE recurring_expense_next_date = CURDATE() AND recurring_expense_status = 1");
+    recurring_expense_month, recurring_expense_next_date, recurring_expense_payment_method, recurring_expense_reference,
+    recurring_expense_vendor_id FROM recurring_expenses WHERE recurring_expense_next_date <= CURDATE() AND recurring_expense_status = 1");
 
 while ($row = mysqli_fetch_assoc($sql_recurring_expenses)) {
     $recurring_expense_id = intval($row['recurring_expense_id']);
@@ -1136,18 +1136,20 @@ while ($row = mysqli_fetch_assoc($sql_recurring_expenses)) {
     $recurring_expense_category_id = intval($row['recurring_expense_category_id']);
     $recurring_expense_account_id = intval($row['recurring_expense_account_id']);
     $recurring_expense_client_id = intval($row['recurring_expense_client_id']);
+    $recurring_expense_next_date = escapeSql($row['recurring_expense_next_date']);
 
-    // Calculate next billing date based on frequency
+    // Calculate next billing date from the scheduled due date (not today) so the schedule
+    // does not drift when an expense is processed late after a missed nightly run.
     if ($recurring_expense_frequency == 1) { // Monthly
-        $next_date_query = "DATE_ADD(CURDATE(), INTERVAL 1 MONTH)";
+        $next_date_query = "DATE_ADD('$recurring_expense_next_date', INTERVAL 1 MONTH)";
     } elseif ($recurring_expense_frequency == 2) { // Yearly
-        $next_date_query = "DATE(CONCAT(YEAR(CURDATE()) + 1, '-', $recurring_expense_month, '-', $recurring_expense_day))";
+        $next_date_query = "DATE(CONCAT(YEAR('$recurring_expense_next_date') + 1, '-', $recurring_expense_month, '-', $recurring_expense_day))";
     } else {
         // Handle unexpected frequency values. For now, just use current date.
         $next_date_query = "CURDATE()";
     }
 
-    mysqli_query($mysqli,"INSERT INTO expenses SET expense_date = CURDATE(), expense_amount = $recurring_expense_amount, expense_currency_code = '$recurring_expense_currency_code', expense_account_id = $recurring_expense_account_id, expense_vendor_id = $recurring_expense_vendor_id, expense_client_id = $recurring_expense_client_id, expense_category_id = $recurring_expense_category_id, expense_description = '$recurring_expense_description', expense_reference = '$recurring_expense_reference'");
+    mysqli_query($mysqli,"INSERT INTO expenses SET expense_date = '$recurring_expense_next_date', expense_amount = $recurring_expense_amount, expense_currency_code = '$recurring_expense_currency_code', expense_account_id = $recurring_expense_account_id, expense_vendor_id = $recurring_expense_vendor_id, expense_client_id = $recurring_expense_client_id, expense_category_id = $recurring_expense_category_id, expense_description = '$recurring_expense_description', expense_reference = '$recurring_expense_reference'");
 
     $expense_id = mysqli_insert_id($mysqli);
 
