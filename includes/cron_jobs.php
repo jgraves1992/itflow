@@ -99,6 +99,14 @@ function cronJobRegistry(): array
             'schedule' => 'Daily',
             'daily_at' => '03:30',
         ],
+        [
+            'name'             => 'marketing_processor',
+            'label'            => 'Marketing Sequence Processor',
+            'script'           => 'custom/marketing_processor.php',
+            'description'      => 'Sends scheduled marketing sequence emails and advances enrollments to their next step.',
+            'schedule'         => 'Interval',
+            'interval_minutes' => 60,
+        ],
     ];
 }
 

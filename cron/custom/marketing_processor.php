@@ -11,21 +11,23 @@
  * Or add to cron/cron.php if ITFlow calls custom cron files from there.
  */
 
-define('FROM_CRON', true);
-
 $base_path = __DIR__ . '/../../';
-require_once $base_path . 'config.php';
-require_once $base_path . 'functions.php';
-require_once $base_path . 'includes/marketing_functions.php';
 
-// Lock file to prevent overlapping runs
-$lock_file = sys_get_temp_dir() . '/itflow_marketing_processor.lock';
+// When included by the cron dispatcher, bootstrap and locking are already handled.
+// When run directly (php cron/custom/marketing_processor.php), do them here.
+if (!defined('ITFLOW_CRON_DISPATCHER')) {
+    define('FROM_CRON', true);
+    require_once $base_path . 'config.php';
+    require_once $base_path . 'functions.php';
 
-if (file_exists($lock_file) && (time() - filemtime($lock_file)) < 600) {
-    exit('Already running');
+    $lock_file = sys_get_temp_dir() . '/itflow_marketing_processor.lock';
+    if (file_exists($lock_file) && (time() - filemtime($lock_file)) < 600) {
+        exit('Already running');
+    }
+    file_put_contents($lock_file, getmypid());
 }
 
-file_put_contents($lock_file, getmypid());
+require_once $base_path . 'includes/marketing_functions.php';
 
 // Read system default sender settings
 $settings_row = mysqli_fetch_assoc(mysqli_query($mysqli,
@@ -140,6 +142,8 @@ while ($row = mysqli_fetch_assoc($enrollments)) {
     $processed++;
 }
 
-@unlink($lock_file);
+if (!defined('ITFLOW_CRON_DISPATCHER') && isset($lock_file)) {
+    @unlink($lock_file);
+}
 
 echo "Done: $processed processed, $errors errors\n";
