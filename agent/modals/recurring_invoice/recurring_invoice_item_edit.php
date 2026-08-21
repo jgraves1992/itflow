@@ -7,7 +7,7 @@ enforceUserPermission('module_sales', 2);
 $item_id = intval($_GET['id']);
 
 $sql = mysqli_query($mysqli, "SELECT item_created_at, item_description, item_name, item_price, item_product_id, item_quantity,
-    item_tax_id, recurring_invoice_client_id FROM recurring_invoice_items LEFT JOIN recurring_invoices ON recurring_invoice_id = item_recurring_invoice_id WHERE item_id = $item_id LIMIT 1");
+    item_tax_id, item_software_id, item_recurring_invoice_id, recurring_invoice_client_id FROM recurring_invoice_items LEFT JOIN recurring_invoices ON recurring_invoice_id = item_recurring_invoice_id WHERE item_id = $item_id LIMIT 1");
 $row = mysqli_fetch_assoc($sql);
 $item_name = escapeHtml($row['item_name']);
 $item_description = escapeHtml($row['item_description']);
