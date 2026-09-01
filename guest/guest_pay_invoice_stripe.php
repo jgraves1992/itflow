@@ -266,7 +266,7 @@ if (isset($_GET['invoice_id'], $_GET['url_key']) && !isset($_GET['payment_intent
 
     // Email Receipt
     $sql_settings = mysqli_query($mysqli, "SELECT config_invoice_from_email, config_invoice_from_name,
-        config_invoice_paid_notification_email, config_smtp_host FROM settings WHERE company_id = 1");
+        config_invoice_paid_notification_email, config_smtp_provider FROM settings WHERE company_id = 1");
     $settings = mysqli_fetch_assoc($sql_settings);
 
     $config_smtp_provider = $settings['config_smtp_provider'];
