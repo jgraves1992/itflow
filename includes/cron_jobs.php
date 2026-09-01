@@ -35,6 +35,9 @@
  * Every job here checks config_enable_cron in its own header and stops itself when that
  * switch is off. It is not a dispatcher-level gate - a new job has to make the check
  * itself, and a job that skips it will keep running on an install that thinks cron is off.
+ *
+ * Order matters: the dispatcher works down this list. app_update replaces the files every
+ * job is loaded from, so it stays at the end and ends the cycle behind itself.
  */
 
 function cronJobRegistry(): array
@@ -106,6 +109,24 @@ function cronJobRegistry(): array
             'description'      => 'Sends scheduled marketing sequence emails and advances enrollments to their next step.',
             'schedule'         => 'Interval',
             'interval_minutes' => 60,
+        ],
+        [
+            'name' => 'update_check',
+            'label' => 'Update Check',
+            'script' => 'update_check.php',
+            'description' => 'Asks the git remote whether a newer release exists and stores the answer for Maintenance > Update.',
+            'schedule' => 'Daily',
+            'daily_at' => '02:30',
+        ],
+        [
+            'name' => 'app_update',
+            'label' => 'Application Update',
+            'script' => 'app_update.php',
+            'description' => 'Runs an update queued from Maintenance > Update. Does nothing unless one is queued.',
+            'schedule' => 'Daily',
+            'daily_at' => '05:00',
+            'enabled' => 0,
+            'interval_safe' => false,
         ],
     ];
 }
