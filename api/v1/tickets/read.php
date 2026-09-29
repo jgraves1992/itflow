@@ -15,6 +15,20 @@ if (isset($_GET['ticket_id'])) {
         WHERE ticket_id = '$id' AND 1=1 " . apiClientScopeSql('ticket_client_id') . ""
     );
 
+} elseif (isset($_GET['ticket_subject'])) {
+    // Subject search — used by integrations to find existing tickets before creating duplicates
+    $subject = addcslashes(mysqli_real_escape_string($mysqli, $_GET['ticket_subject']), '%_');
+    $open_only = isset($_GET['open_only'])
+        ? "AND ticket_resolved_at IS NULL AND ticket_closed_at IS NULL"
+        : "";
+    $sql = mysqli_query(
+        $mysqli,
+        "SELECT * FROM tickets
+        WHERE ticket_subject LIKE '%$subject%'
+        $open_only " . apiClientScopeSql('ticket_client_id') . "
+        ORDER BY ticket_id DESC LIMIT $limit OFFSET $offset"
+    );
+
 } else {
     // All tickets (by client ID if given, or all in general if key permits)
     $sql = mysqli_query($mysqli, "SELECT * FROM tickets WHERE 1=1 " . apiClientScopeSql('ticket_client_id') . " ORDER BY ticket_id LIMIT $limit OFFSET $offset");
