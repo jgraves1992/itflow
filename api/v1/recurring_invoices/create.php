@@ -20,6 +20,7 @@
  *   "category_id":     1,             // optional
  *   "email_notify":    false,         // optional, default false (Stripe handles emails)
  *   "total":           99.00,         // used when no items array provided
+ *   "tax_id":          2,             // optional; applies tax to flat `total` when no items given
  *   "items": [                        // optional
  *     {"name": "RMM", "quantity": 10, "price": 5.00},
  *     {"name": "Backup", "quantity": 1, "price": 50.00, "tax_id": 1}
@@ -70,6 +71,9 @@ $next_date = (isset($_POST['next_date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', 
     ? escapeSql($_POST['next_date'])
     : '';
 
+// Optional top-level tax — applies to the flat `total` when no items array is provided
+$tax_id_top = isset($_POST['tax_id']) ? intval($_POST['tax_id']) : 0;
+
 // email_notify defaults off — Stripe (or whatever upstream) sends its own emails
 $email_notify = !empty($_POST['email_notify']) && $_POST['email_notify'] !== 'false' && $_POST['email_notify'] !== '0' ? 1 : 0;
 
@@ -105,6 +109,34 @@ if (empty($next_date)) {
     $return_arr['message'] = "Required field 'next_date' is missing or invalid. Expected format: YYYY-MM-DD.";
     echo json_encode($return_arr);
     exit();
+}
+
+if ($tax_id_top > 0 && empty($_POST['items'])) {
+    $tax_chk = mysqli_fetch_assoc(mysqli_query($mysqli,
+        "SELECT tax_id, tax_rate FROM taxes WHERE tax_id = $tax_id_top LIMIT 1"
+    ));
+    if (!$tax_chk) {
+        $return_arr['success'] = "False";
+        $return_arr['message'] = "tax_id $tax_id_top does not exist in the taxes table.";
+        echo json_encode($return_arr);
+        exit();
+    }
+    $ri_base       = round(floatval($_POST['total'] ?? 0), 2);
+    $ri_item_tax   = round($ri_base * floatval($tax_chk['tax_rate']) / 100, 2);
+    $ri_item_total = round($ri_base + $ri_item_tax, 2);
+
+    $parsed_items = [[
+        'name'        => $scope,
+        'description' => '',
+        'quantity'    => 1,
+        'price'       => $ri_base,
+        'subtotal'    => $ri_base,
+        'tax'         => $ri_item_tax,
+        'tax_id'      => $tax_id_top,
+        'total'       => $ri_item_total,
+        'order'       => 1,
+    ]];
+    $invoice_amount = max(0, round($ri_item_total - $discount_amount, 2));
 }
 
 // ------------------------------------------------------------------

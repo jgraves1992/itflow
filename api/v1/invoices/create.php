@@ -19,6 +19,9 @@
  *   "category_id":    1,                  // optional
  *   "send_email":     false,              // optional, default false
  *   "total":          99.00,              // used when no items array provided
+ *   "subtotal":       90.00,             // optional; when set, overrides items — pre-tax line total
+ *   "tax_id":         2,                 // optional; must exist in taxes table when > 0
+ *   "tax_amount":     8.10,             // optional; Stripe-computed tax (not recomputed from rate)
  *   "items": [                            // optional
  *     {"name": "RMM", "quantity": 10, "price": 5.00},
  *     {"name": "Backup", "description": "Cloud backup", "quantity": 1, "price": 50.00, "tax_id": 1}
@@ -33,6 +36,12 @@ require_once '../require_post_method.php';
 require_once "../../../includes/load_global_settings.php";
 
 require_once 'invoice_model.php';
+
+// Optional pre-computed tax fields — used when the caller (e.g. Stripe) provides the
+// breakdown instead of expecting ITFlow to recompute it from a tax_rate.
+$subtotal   = isset($_POST['subtotal'])   ? round(floatval($_POST['subtotal']),   2) : null;
+$tax_id_top = isset($_POST['tax_id'])     ? intval($_POST['tax_id'])                 : 0;
+$tax_amount = isset($_POST['tax_amount']) ? round(floatval($_POST['tax_amount']), 2) : 0.0;
 
 // mark_paid: create invoice already in Paid status and record a payment entry atomically
 $mark_paid          = !empty($_POST['mark_paid']) && $_POST['mark_paid'] !== 'false' && $_POST['mark_paid'] !== '0';
@@ -62,6 +71,41 @@ if (!$client_id) {
     $return_arr['message'] = "Required field 'client_id' is missing or API key is not scoped to a client.";
     echo json_encode($return_arr);
     exit();
+}
+
+if ($subtotal !== null) {
+    if ($tax_id_top > 0) {
+        $tax_chk = mysqli_fetch_assoc(mysqli_query($mysqli,
+            "SELECT tax_id FROM taxes WHERE tax_id = $tax_id_top LIMIT 1"
+        ));
+        if (!$tax_chk) {
+            $return_arr['success'] = "False";
+            $return_arr['message'] = "tax_id $tax_id_top does not exist in the taxes table.";
+            echo json_encode($return_arr);
+            exit();
+        }
+    }
+
+    if (isset($_POST['total']) && abs(($subtotal + $tax_amount) - floatval($_POST['total'])) > 0.01) {
+        $return_arr['success'] = "False";
+        $return_arr['message'] = "Mismatch: subtotal ($subtotal) + tax_amount ($tax_amount) = " . round($subtotal + $tax_amount, 2) . " but total = " . floatval($_POST['total']) . " (difference exceeds \$0.01).";
+        echo json_encode($return_arr);
+        exit();
+    }
+
+    $item_total    = round($subtotal + $tax_amount, 2);
+    $parsed_items  = [[
+        'name'        => $scope,
+        'description' => '',
+        'quantity'    => 1,
+        'price'       => $subtotal,
+        'subtotal'    => $subtotal,
+        'tax'         => $tax_amount,
+        'tax_id'      => $tax_id_top,
+        'total'       => $item_total,
+        'order'       => 1,
+    ]];
+    $invoice_amount = max(0, round($item_total - $discount_amount, 2));
 }
 
 // Atomically increment invoice number
