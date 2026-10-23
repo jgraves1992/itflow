@@ -141,11 +141,14 @@ $resource_module = [
     'contacts'      => 'module_client',
     'locations'     => 'module_client',
     'vendors'       => 'module_client',
-    'invoices'      => 'module_sales',
-    'invoice_items' => 'module_sales',
-    'quotes'        => 'module_sales',
+    'invoices'           => 'module_sales',
+    'invoice_items'      => 'module_sales',
+    'recurring_invoices' => 'module_sales',
+    'quotes'             => 'module_sales',
     'products'      => 'module_sales',
-    'expenses'      => 'module_financial',
+    'accounts'        => 'module_financial',
+    'payment_methods' => 'module_financial',
+    'expenses'        => 'module_financial',
     'credentials'   => 'module_credential',
 ];
 
