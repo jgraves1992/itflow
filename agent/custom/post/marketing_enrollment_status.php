@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 defined('FROM_POST_HANDLER') or die('Direct access not permitted');
 
 // Handles both pause and resume enrollment actions

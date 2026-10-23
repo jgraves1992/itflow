@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /*
  * ITFlow - GET/POST request handler for client software & licenses

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /*
  * Client Portal
  * Invoices for PTC

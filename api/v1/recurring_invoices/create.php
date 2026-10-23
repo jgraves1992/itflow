@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /*
  * API - recurring_invoices/create.php

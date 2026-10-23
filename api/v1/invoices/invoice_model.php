@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /*
  * API - invoice_model.php

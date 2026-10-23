@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 // Default Column Sortby/Order Filter
 $sort = "contract_start_date";

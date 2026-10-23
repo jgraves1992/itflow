@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 defined('FROM_POST_HANDLER') or die('Direct access not permitted');
 
 if (!isset($_POST['edit_marketing_lead'])) return;

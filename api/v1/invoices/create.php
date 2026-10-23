@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /*
  * API - invoices/create.php

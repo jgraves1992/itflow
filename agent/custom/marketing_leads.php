@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 require_once "includes/inc_all_custom.php";
 
