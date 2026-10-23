@@ -80,10 +80,10 @@ foreach ($raw_items as $item) {
 
     if ($item_tax_id > 0) {
         $tax_row = mysqli_fetch_assoc(mysqli_query($mysqli,
-            "SELECT tax_rate FROM taxes WHERE tax_id = $item_tax_id LIMIT 1"
+            "SELECT tax_percent FROM taxes WHERE tax_id = $item_tax_id LIMIT 1"
         ));
         if ($tax_row) {
-            $item_tax = round($item_subtotal * floatval($tax_row['tax_rate']) / 100, 2);
+            $item_tax = round($item_subtotal * floatval($tax_row['tax_percent']) / 100, 2);
         }
     }
 

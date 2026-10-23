@@ -113,7 +113,7 @@ if (empty($next_date)) {
 
 if ($tax_id_top > 0 && empty($_POST['items'])) {
     $tax_chk = mysqli_fetch_assoc(mysqli_query($mysqli,
-        "SELECT tax_id, tax_rate FROM taxes WHERE tax_id = $tax_id_top LIMIT 1"
+        "SELECT tax_id, tax_percent FROM taxes WHERE tax_id = $tax_id_top LIMIT 1"
     ));
     if (!$tax_chk) {
         $return_arr['success'] = "False";
@@ -122,7 +122,7 @@ if ($tax_id_top > 0 && empty($_POST['items'])) {
         exit();
     }
     $ri_base       = round(floatval($_POST['total'] ?? 0), 2);
-    $ri_item_tax   = round($ri_base * floatval($tax_chk['tax_rate']) / 100, 2);
+    $ri_item_tax   = round($ri_base * floatval($tax_chk['tax_percent']) / 100, 2);
     $ri_item_total = round($ri_base + $ri_item_tax, 2);
 
     $parsed_items = [[
